@@ -1,343 +1,239 @@
-# CLAUDE.md for Gineers-KG4EPIC Development Sessions
+# CLAUDE.md for Gineers-KG4EPIC Development Sessions - v8
 
-## ⚠️ CRITICAL UPDATE: v5.1 Structure Changes + Evidence-Driven
+## ⚠️ CRITICAL EXECUTION RULES
 
-### What Changed (v5.1):
-- **Folder structure** now follows proper PHASE→PATH→TIDE hierarchy
-- **WORKs** are in shared pool at `BLUEPRINTs/works/`
-- **PATH** is now at `phases/PHASE_1_free/paths/kg4epic-mvp-enriched.yml`
-- **Database schema** updated with PHASES table and PATH_WORKS junction
+### EPIC-TIDE v8 Evidence-Driven Development:
+1. **MUST create execution YAML** before starting implementation
+2. **MUST update execution document** after each work completion
+3. **MUST record evidence** (artifacts, logs, verification) for tracing
+4. **MUST follow blueprint works** in dependency order
 
-### Fundamental Principle:
-- **NO TIME ESTIMATES** - EPIC-TIDE is evidence-driven
-- **Progress by EVIDENCE** - Either it works or it doesn't
-- **Completion by CRITERIA** - Not by schedules or deadlines
-- **Events drive coordination** - Not time-based milestones
+### Current Execution:
+- **Blueprint**: `Docs/Gineers-KG4EPIC/v8/BLUEPRINTS/epic_tide_v8_phase_1_final.yml`
+- **Execution**: `Docs/Gineers-KG4EPIC/v8/EXECUTIONS/execution_1.yml`
+- **Status**: TIDE 1 in progress (2/16 works complete)
+
+## 🚀 CRITICAL: v8 PHASE_1 - Passive Storage with MCP Contract
+
+### Architecture Understanding:
+```
+Claude Code → MCP Server → KG4EPIC /api/tool → PostgreSQL
+     ↓           ↓              ↓                ↓
+Orchestrates   Bridge    MCP Contract      Database
+```
 
 ### Your Mission:
-Build the **KG4EPIC RESTful API server** using EPIC-TIDE **v5.1** methodology.
+Build **KG4EPIC** as a PASSIVE document storage system with MCP-compatible API.
+- Single `/api/tool` endpoint (POST only)
+- Internal routing based on 'tool' parameter
+- MCP request/response format compliance
+- No workflow logic, pure storage only
+
+## Current Blueprint: v8 PHASE_1
 
 ### Start Here:
 ```bash
 cd /Users/inseokseo/Gineers-Projects/Gineers-KG4EPIC
 
-# 1. Read the PHASE definition first (NEW in v5.1)
-cat Docs/Gineers-KG4EPIC/BLUEPRINTs/phases/PHASE_1_free/PHASE_1_free.yml
+# Read the v8 PHASE_1 blueprint
+cat Docs/Gineers-KG4EPIC/v8/BLUEPRINTS/epic_tide_v8_phase_1_final.yml
 
-# 2. Read the PATH under the PHASE (NEW location)
-cat Docs/Gineers-KG4EPIC/BLUEPRINTs/phases/PHASE_1_free/paths/kg4epic-mvp-enriched.yml
-
-# 3. Check if any TIDEs exist (NEW structure)
-ls Docs/Gineers-KG4EPIC/EXECUTIONs/phases/PHASE_1_free/paths/kg4epic-mvp/
-
-# 4. If no TIDEs, you're ready to start TIDE_1
+# Check MCP contract requirements
+cat Docs/Gineers-KG4EPIC/API_CONTRACT_REQUEST_FOR_MCP.md
 ```
 
-## Project Overview
+## v8 Database Schema (4 Tables)
 
-### What is KG4EPIC?
-A **PASSIVE DOCUMENT STORE** for EPIC-TIDE methodology with:
-- **PostgreSQL + pgvector** for semantic search
-- **POST-only endpoints** for security
-- **E5-large-v2 embeddings** (1024 dimensions)
-- **Docker compose** stack named 'gineers-kg4epic'
-- **Self-contained v4 documents** with embedded context
-- **NO PATTERN EXTRACTION** (deferred to Gineers-ACC)
-- **NO LEARNING SYNTHESIS** (deferred to Gineers-ACC)
+### Tables to Create:
+```sql
+1. blueprints: id(uuid), slug, name, yaml_content, metadata, tags, 
+               embedding_name(1024), embedding_content(1536), timestamps
+               
+2. executions: id(uuid), blueprint_id, tide_number, status, content,
+               embedding_summary(1536), timestamps
+               
+3. evidence: id(uuid), execution_id, work_key, evidence_type, 
+             content, artifacts, created_at
+             
+4. patterns: id(uuid), problem, solution, applicability_score,
+             embedding_problem(1536), embedding_solution(1536),
+             usage_count, created_at
+```
 
-## Current Status - PHASE_2 EXECUTION (v6)
+## MCP Contract Implementation
 
-### PHASE_2 MULTI-TIER EMBEDDINGS (IN PROGRESS)
+### Request Format:
+```json
+{
+  "tool": "blueprint-create",
+  "arguments": {
+    "slug": "...",
+    "name": "...",
+    "yaml_content": "..."
+  }
+}
+```
 
-#### Completed (4/20 works):
+### Response Format:
+```json
+{
+  "success": true,
+  "result": {
+    "content": [
+      {"type": "text", "text": "Operation successful"}
+    ]
+  }
+}
+```
+
+## Implementation Works (16 Total)
+
+### Database Foundation:
+1. ✅ drop_legacy_schema - Remove v5.1 tables
+2. ⬜ create_v8_schema - Deploy 4 new tables
+
+### MCP API Implementation:
+3. ⬜ setup_api_structure - Express with TypeScript
+4. ⬜ implement_tool_router - Route tools to handlers
+5. ⬜ implement_blueprint_tools - 5 blueprint operations
+6. ⬜ implement_execution_tools - 4 execution operations
+7. ⬜ implement_evidence_endpoints - 2 evidence operations
+8. ⬜ implement_pattern_endpoints - 4 pattern operations
+
+### Embedding Integration:
+9. ⬜ integrate_embedding_services - Connect E5 & Ada-002
+10. ⬜ implement_embedding_pipeline - Auto-generate on save
+
+### Search & Optimization:
+11. ⬜ implement_semantic_search - Cross-entity search
+12. ⬜ optimize_search_performance - < 200ms latency
+13. ⬜ standardize_responses - MCP format compliance
+
+### Testing & Deployment:
+14. ⬜ create_integration_tests - All endpoints
+15. ⬜ validate_performance - Load testing
+16. ⬜ deploy_complete_system - Docker Compose
+
+## Existing Infrastructure to Keep
+
+### What's Already Running:
 ```yaml
-prepare_ada002_integration: ✓ API key verified, connection tested
-create_ada002_service: ✓ FastAPI service on port 8001
-update_database_for_ada002: ✓ Migration applied, 5 tables updated
-implement_dual_embedding_api: ✓ /v2/embed endpoints working
+postgres: pgvector/pgvector:pg15 (port 5432)
+embeddings-e5: Python FastAPI (port 8000) - E5-large-v2
+embeddings-ada002: Python FastAPI (port 8001) - text-embedding-ada-002
+api: Node.js/TypeScript (port 3000) - Needs rewrite for MCP
 ```
 
-#### Architecture Update:
-- **4-container stack** (postgres, embeddings, embeddings-ada002, api)
-- **Multi-tier embeddings**: E5-large-v2 (1024d) + text-embedding-ada-002 (1536d)
-- **Dual vector columns** in all tables
-- **API v2 endpoints** for multi-tier operations
-
-### TIDE_1 EXECUTION RESULTS (PHASE_1 COMPLETE)
-**Status**: SUCCESS with gaps ⚠️
-**Achievement**: Foundation deployed and running
-**Major Gaps**: Testing, validation, semantic search
-
-### TIDE_1 Completed Items:
-1. ✅ Node.js/TypeScript project setup
-2. ✅ Docker stack running (postgres + api)
-3. ✅ v5.1 database schema fully deployed (6 tables)
-4. ⚠️ API working with mock embeddings (ESM issue)
-
-### TIDE_2 Ready WORKs (Validation PATH):
-Location: `BLUEPRINTs/works/`
-1. 🔴 `validate-database-schema-v5-1.yml` - Verify v5.1 compliance
-2. 🔴 `validate-semantic-search-v5.yml` - Implement search endpoints
-3. 🔴 `validate-integration-tests-v5.yml` - Create test suite
-4. 🔴 `complete-docker-stack-v5.yml` - Full orchestration
-
-### TIDE_2 PATH to Execute:
-```yaml
-PHASE: PHASE_1_free
-PATH: phases/PHASE_1_free/paths/kg4epic-validation.yml
-Purpose: Complete and validate TIDE_1 gaps
-Works sequence (validation focus):
-  - ../../../works/validate-database-schema-v5-1
-  - ../../../works/validate-semantic-search-v5
-  - ../../../works/validate-integration-tests-v5
-  - ../../../works/complete-docker-stack-v5
-```
-
-## EPIC-TIDE v5.1 Execution Guide
-
-### Step 1: Create Proper Directory Structure
-```bash
-# Create v5.1 execution structure
-mkdir -p Docs/Gineers-KG4EPIC/EXECUTIONs/phases/PHASE_1_free/paths/kg4epic-mvp/TIDE_1
-```
-
-### Step 2: Start TIDE_1
-Create: `Docs/Gineers-KG4EPIC/EXECUTIONs/phases/PHASE_1_free/paths/kg4epic-mvp/TIDE_1/tide.yml`
-```yaml
-TIDE:
-  attempt: 1
-  path_ref: kg4epic-mvp
-  started: [timestamp]
-  
-  execution:
-    setup-nodejs-project-v3-enriched: # Start here
-    setup-docker-environment-v4: 
-    design-database-schema-v4:
-    implement-post-api-v4:
-```
-
-### Step 3: Execute Each WORK
-For each WORK in sequence:
-
-1. **Read the WORK file from shared pool** (v5.1 location):
-   ```bash
-   cat Docs/Gineers-KG4EPIC/BLUEPRINTs/works/[work-name].yml
-   ```
-
-2. **Check the sections**:
-   - `context:` - Where to work, what's needed
-   - `knowledge:` - Critical information
-   - `artifacts:` - Actual code/configs to use
-   - `troubleshooting:` - If something goes wrong
-
-3. **Implement using artifacts**:
-   - Copy code from `artifacts:` section
-   - Follow the `how:` steps
-   - Verify with `metrics:`
-
-4. **Update TIDE execution**:
-   ```yaml
-   execution:
-     work-name: complete  # or failed/blocked
-   ```
-
-### Step 3: Handle Failures
-If a WORK fails:
-1. Check `troubleshooting:` in the WORK file
-2. Document the issue in TIDE `learnings:`
-3. If can't fix, mark as failed and continue to TIDE_2
-
-### Step 4: Complete TIDE
-When all WORKs executed:
-```yaml
-outcome: success  # or partial/failed
-learnings: |
-  - What you discovered
-  - What should be added to WORKs
-```
-
-### Step 5: Update Documents with Learnings
-**This is critical for v4!** - Add your learnings back to the documents:
-
-If you discovered something new:
-1. Add to WORK's `learnings:` section
-2. Add to WORK's `troubleshooting:` if it's an issue
-3. Update PATH's `learnings:` for project-wide insights
+### What to Preserve:
+- Docker Compose infrastructure
+- E5 embeddings service (working, keep as-is)
+- Ada-002 embeddings service (working, keep as-is)
+- PostgreSQL container (rebuild with v8 schema)
 
 ## Key Technical Decisions
 
-### PASSIVE STORAGE ARCHITECTURE (2025-01-28)
-- **KG4EPIC**: Dumb, fast, reliable document store
-- **Gineers-ACC**: Smart processing (separate system, build later)
-- **No pattern extraction in KG4EPIC**
-- **No learning synthesis in KG4EPIC**
+### API Design:
+- Single `/api/tool` endpoint only
+- POST method exclusively
+- MCP contract format (not REST)
+- Internal tool routing
 
-### Security: POST-Only
-- All endpoints use POST method
-- No sensitive data in URLs
-- API key in header: `x-api-key`
+### Embeddings Strategy:
+- **Light fields** (E5-large-v2, 1024d): name, slug, tags, summary
+- **Heavy fields** (Ada-002, 1536d): yaml_content, content, problem, solution
 
-### Database: PostgreSQL + pgvector + v5.1 Schema
-- Docker image: `pgvector/pgvector:pg15`
-- Vector dimension: 1024 (E5-large-v2)
-- **v5.1 CHANGES ALREADY IN design-database-schema-v4.yml**:
-  - PHASES table added
-  - PATH_WORKS junction table for many-to-many
-  - v4 fields in all tables (context, knowledge, etc.)
-- **IMPORTANT**: Run the v5.1 schema, not old versions!
+### Performance Requirements:
+- Storage latency: < 100ms (P95)
+- Retrieval latency: < 50ms (P95)
+- Search latency: < 200ms (P95)
 
-### Docker Setup
-- Stack name: `gineers-kg4epic`
-- Postgres on port 5432
-- API on port 3000
-- Use service names in connection strings (not localhost)
+## Current Execution Status
 
-### Embeddings
-- Model: `intfloat/e5-large-v2`
-- Use prefix `query:` for search embeddings
-- Cache embeddings for performance
+### Phase 1 Works Progress:
+```yaml
+Database:
+  drop_legacy_schema: ⬜ Not started
+  create_v8_schema: ⬜ Not started
 
-## Current Docker Stack Status (TIDE_1 Result)
+API:
+  setup_api_structure: ⬜ Not started
+  implement_tool_router: ⬜ Not started
+  
+Tools (18+ total):
+  blueprint-*: ⬜ 5 operations
+  execution-*: ⬜ 4 operations
+  evidence-*: ⬜ 2 operations
+  pattern-*: ⬜ 4 operations
+  utility: ⬜ 3 operations
+```
 
-### What's Running:
+## Next Actions
+
+1. **Drop legacy v5.1 schema** (backup first if needed)
+2. **Create v8 schema** with 4 tables
+3. **Set up API** with single /api/tool endpoint
+4. **Implement tool router** for internal dispatch
+5. **Add MCP tools** one by one
+
+## Common Commands
+
+### Database Operations:
 ```bash
-# Both containers operational
-kg4epic-postgres: pgvector/pgvector:pg15 (port 5432) ✅
-kg4epic-api: gineers-kg4epic-api (port 3000) ✅
+# Connect to database
+docker exec -it kg4epic-postgres psql -U postgres -d kg4epic
+
+# Check current tables
+\dt
+
+# Drop old tables (careful!)
+DROP TABLE IF EXISTS phases, paths, tides, works, path_works CASCADE;
 ```
 
-### What Works:
-- Database has all 6 v5.1 tables
-- API responds to POST requests
-- Authentication via x-api-key header
-- Basic CRUD operations functional
-- Mock embeddings generating vectors
+### API Development:
+```bash
+# Start development
+npm run dev
 
-### What Doesn't Work:
-- Real E5-large-v2 embeddings (ESM module issue)
-- Semantic search endpoints (not implemented)
-- PATH creation with v5.1 junction table
-- Health check endpoints
-
-## Common Issues (Pre-documented)
-
-### Issue 1: Port Conflicts
-**Solution**: Check `setup-docker-environment-v4.yml` troubleshooting section
-
-### Issue 2: pgvector Not Found
-**Solution**: Must use `pgvector/pgvector:pg15` image, not standard postgres
-
-### Issue 3: Connection Refused
-**Solution**: In Docker, use `postgres` as host, not `localhost`
-
-### Issue 4: Vector Dimension Mismatch
-**Solution**: All vectors must be 1024 dimensions (E5-large-v2)
-
-## File Locations (v5.1 Structure)
-
-### Blueprints:
-```
-Docs/Gineers-KG4EPIC/BLUEPRINTs/
-  phases/
-    PHASE_1_free/
-      PHASE_1_free.yml               # Phase definition
-      paths/
-        kg4epic-mvp-enriched.yml     # PATH (Start here!)
-  works/                              # Shared pool
-    setup-nodejs-project-v3-enriched.yml
-    setup-docker-environment-v4.yml
-    design-database-schema-v4.yml    # v5.1 schema!
-    implement-post-api-v4.yml
+# Test endpoint
+curl -X POST http://localhost:3000/api/tool \
+  -H "Content-Type: application/json" \
+  -H "x-api-key: test-key" \
+  -d '{"tool": "health-check", "arguments": {}}'
 ```
 
-### Your Work Goes Here:
-```
-/Users/inseokseo/Gineers-Projects/Gineers-KG4EPIC/
-  src/           # API code
-  docker-compose.yml
-  package.json
-  .env
+### Docker Operations:
+```bash
+# View running containers
+docker ps
+
+# Check logs
+docker logs kg4epic-api -f
+
+# Rebuild API container
+docker-compose up -d --build api
 ```
 
-### Track Execution Here (v5.1):
+## Git Commits
 ```
-Docs/Gineers-KG4EPIC/EXECUTIONs/
-  phases/
-    PHASE_1_free/
-      paths/
-        kg4epic-mvp/
-          TIDE_1/
-            tide.yml  # Your TIDE tracking
+{Detailed message about v8 implementation}
+Author: David Seo of Gineers.AI
 ```
 
 ## Critical Reminders
 
-### 1. Use v4 Documents
-Only use WORKs with `-v4` or `-v3-enriched` suffix. They have:
-- Complete context
-- Full implementation in artifacts
-- Troubleshooting guides
-- Accumulated learnings
+### What KG4EPIC IS:
+- ✅ Passive document storage
+- ✅ MCP contract implementation
+- ✅ Single /api/tool endpoint
+- ✅ Internal tool routing
+- ✅ Dual embedding strategy
 
-### 2. Everything is Self-Contained
-Each WORK has **everything** needed to execute it. No external lookups required.
-
-### 3. Update Documents with Learnings
-After execution, add learnings back to WORKs and PATH. This is how v4 documents improve.
-
-### 4. Follow the PATH
-Execute WORKs in sequence defined by the PATH. Check prerequisites in each WORK's `context:` section.
-
-## Git Commits
-```
-{Detailed message about what was implemented}
-Author: David Seo of Gineers.AI
-```
-
-## Questions to Ask Yourself
-
-Before starting:
-- [ ] Have I read kg4epic-mvp-enriched.yml?
-- [ ] Do I understand the project goals?
-- [ ] Have I checked for existing TIDEs?
-
-For each WORK:
-- [ ] Have I read the complete v4 WORK file?
-- [ ] Am I using the artifacts section?
-- [ ] Have I checked troubleshooting for known issues?
-
-After execution:
-- [ ] Have I updated the TIDE file?
-- [ ] Have I documented learnings?
-- [ ] Should I update the WORK with new knowledge?
-
-## Next Actions for TIDE_2
-
-1. ✅ Review TIDE_1 gaps (Supervisor report)
-2. 🔴 Start TIDE_2 for kg4epic-validation PATH
-3. 🔴 Execute validation WORKs in sequence
-4. 🔴 Create evidence artifacts (screenshots, test results)
-5. 🔴 Document learnings and update WORKs
-
-## TIDE_1 Learnings to Apply in TIDE_2
-
-### Technical Learnings:
-- **ESM Module Issue**: @xenova/transformers needs separate service
-- **Database**: v5.1 schema works, all 6 tables verified
-- **Docker**: Both containers run successfully
-- **pgvector**: Requires array format [n,n,n] not JSON
-
-### Process Learnings:
-- **Evidence Required**: Claims need proof (screenshots, logs)
-- **Testing Parallel**: Tests should be created with features
-- **Validation First**: Each WORK needs validation before next
-- **Mock vs Real**: Mock embeddings work for testing
-
-### What TIDE_2 Must Fix:
-1. **Embeddings**: Create separate embedding service
-2. **Tests**: Build comprehensive test suite
-3. **Search**: Implement semantic search endpoints
-4. **Evidence**: Generate validation artifacts
+### What KG4EPIC is NOT:
+- ❌ MCP Server (that's separate)
+- ❌ Workflow orchestrator
+- ❌ Event handler
+- ❌ State machine
+- ❌ Autonomous agent
 
 ---
-*This document guides development sessions through KG4EPIC implementation using EPIC-TIDE v4 methodology.*
+*This document guides v8 PHASE_1 implementation of KG4EPIC passive storage system.*

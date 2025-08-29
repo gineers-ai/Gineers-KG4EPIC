@@ -4,11 +4,7 @@ import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import { apiKeyAuth } from './middleware/auth';
 import { errorHandler } from './middleware/error';
-import workRoutes from './api/routes/work';
-import pathRoutes from './api/routes/path';
-import tideRoutes from './api/routes/tide';
-import searchRoutes from './api/routes/search';
-import embeddingsRoutes from './api/routes/embeddings';
+import mcpGateway from './api/mcp-gateway';
 
 const app = express();
 
@@ -24,17 +20,11 @@ const limiter = rateLimit({
 });
 app.use('/api/', limiter);
 
-// Routes (embedddings have their own auth)
-app.use('/api', embeddingsRoutes);
-
-// Authentication for other routes
+// Authentication
 app.use('/api/', apiKeyAuth);
 
-// Protected routes (all POST)
-app.use('/api', workRoutes);
-app.use('/api', pathRoutes);
-app.use('/api', tideRoutes);
-app.use('/api', searchRoutes);
+// MCP Gateway - Single endpoint for all operations
+app.use('/api', mcpGateway);
 
 // Error handling (must be last)
 app.use(errorHandler);

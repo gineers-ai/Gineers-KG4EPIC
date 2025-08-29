@@ -1,0 +1,152 @@
+# TEST EXECUTION 1 - v8 PHASE_1 Integration Tests
+# Purpose: Validate all 18+ MCP tools work correctly
+# Target: 100% pass rate for PHASE_1 completion
+
+TEST_EXECUTION:
+  # === IDENTIFICATION ===
+  execution_id: "test-v8-phase1-integration"
+  blueprint_ref: "epic_tide_v8_phase_1_final"
+  test_type: "integration"
+  
+  # === TEST PLAN ===
+  test_plan:
+    total_tools: 18
+    test_categories:
+      - "Blueprint operations (5 tools)"
+      - "Execution operations (4 tools)"
+      - "Evidence operations (2 tools)"
+      - "Pattern operations (4 tools)"
+      - "Utility operations (3 tools)"
+    
+    success_criteria:
+      - "All tools return MCP-compliant responses"
+      - "Embeddings generate for all entities"
+      - "Cross-references work (FK constraints)"
+      - "Search returns relevant results"
+      - "Error handling works correctly"
+  
+  # === TEST CASES ===
+  test_cases:
+    # BLUEPRINT TESTS
+    blueprint_tests:
+      - id: "BP-001"
+        tool: "blueprint-create"
+        description: "Create blueprint with embeddings"
+        validates: ["MCP format", "Embedding generation", "UUID creation"]
+      
+      - id: "BP-002"
+        tool: "blueprint-get"
+        description: "Retrieve by ID and slug"
+        validates: ["Retrieval by ID", "Retrieval by slug", "Error on not found"]
+      
+      - id: "BP-003"
+        tool: "blueprint-list"
+        description: "List with pagination"
+        validates: ["List all", "Pagination", "Sorting"]
+      
+      - id: "BP-004"
+        tool: "blueprint-update"
+        description: "Update existing blueprint"
+        validates: ["Partial update", "Embedding regeneration"]
+      
+      - id: "BP-005"
+        tool: "blueprint-search"
+        description: "Semantic search blueprints"
+        validates: ["Similarity search", "Threshold filtering"]
+    
+    # EXECUTION TESTS
+    execution_tests:
+      - id: "EX-001"
+        tool: "execution-create"
+        description: "Create execution with FK to blueprint"
+        validates: ["FK constraint", "Tide uniqueness", "Embedding generation"]
+      
+      - id: "EX-002"
+        tool: "execution-get"
+        description: "Retrieve execution"
+        validates: ["Get by ID", "Get by blueprint+tide", "Join with blueprint"]
+      
+      - id: "EX-003"
+        tool: "execution-update"
+        description: "Update execution status"
+        validates: ["Status update", "Content update"]
+      
+      - id: "EX-004"
+        tool: "execution-list"
+        description: "List executions"
+        validates: ["Filter by blueprint", "Filter by status"]
+    
+    # EVIDENCE TESTS
+    evidence_tests:
+      - id: "EV-001"
+        tool: "evidence-add"
+        description: "Add evidence to execution"
+        validates: ["FK to execution", "Multiple evidence types"]
+      
+      - id: "EV-002"
+        tool: "evidence-list"
+        description: "List evidence for execution"
+        validates: ["Filter by execution", "Include artifacts"]
+    
+    # PATTERN TESTS
+    pattern_tests:
+      - id: "PT-001"
+        tool: "pattern-create"
+        description: "Create pattern with dual embeddings"
+        validates: ["Problem embedding", "Solution embedding", "Score setting"]
+      
+      - id: "PT-002"
+        tool: "pattern-get"
+        description: "Retrieve and increment usage"
+        validates: ["Usage count increment", "Return full pattern"]
+      
+      - id: "PT-003"
+        tool: "pattern-list"
+        description: "List patterns by score"
+        validates: ["Sort by score", "Sort by usage", "Pagination"]
+      
+      - id: "PT-004"
+        tool: "pattern-search"
+        description: "Semantic search patterns"
+        validates: ["Problem search", "Solution search", "Combined search"]
+    
+    # UTILITY TESTS
+    utility_tests:
+      - id: "UT-001"
+        tool: "health-check"
+        description: "Check system health"
+        validates: ["Database health", "Embeddings health", "Response format"]
+      
+      - id: "UT-002"
+        tool: "search-semantic"
+        description: "Cross-entity semantic search"
+        validates: ["Search across types", "Similarity scores", "Result formatting"]
+      
+      - id: "UT-003"
+        tool: "unknown-tool"
+        description: "Test unknown tool handling"
+        validates: ["Error response", "Proper error code"]
+  
+  # === EXECUTION STATUS ===
+  status: "completed"
+  started_at: "2025-08-29T18:57:25Z"
+  completed_at: "2025-08-29T18:58:31Z"
+  
+  # === TEST RESULTS ===
+  test_results:
+    total_tests: 18
+    passed: 18
+    failed: 0
+    skipped: 0
+    success_rate: "100.0%"
+    
+    test_data_created:
+      blueprint_id: "8054df57-b5b1-4c98-85d2-57cfe1d8aef1"
+      execution_id: "c7a9a090-22a8-442a-a3f1-8fc8d8368778"
+      pattern_id: "0055e32c-557c-4903-89ff-3ceef973a615"
+    
+  # === ARTIFACTS ===
+  artifacts:
+    test_script: "test/integration/mcp-tools.test.js"
+    test_results: "test/integration/test-results.json"
+    coverage_report: "All 18 MCP tools tested successfully"

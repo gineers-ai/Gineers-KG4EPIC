@@ -1,0 +1,107 @@
+{
+  "timestamp": "2025-08-29T18:58:31.606Z",
+  "summary": {
+    "total": 18,
+    "passed": 18,
+    "failed": 0,
+    "successRate": "100.0%"
+  },
+  "results": [
+    {
+      "id": "BP-001",
+      "description": "Create blueprint with embeddings",
+      "status": "PASS"
+    },
+    {
+      "id": "BP-002",
+      "description": "Retrieve by ID and slug",
+      "status": "PASS"
+    },
+    {
+      "id": "BP-003",
+      "description": "List with pagination",
+      "status": "PASS"
+    },
+    {
+      "id": "BP-004",
+      "description": "Update existing blueprint",
+      "status": "PASS"
+    },
+    {
+      "id": "BP-005",
+      "description": "Semantic search blueprints",
+      "status": "PASS"
+    },
+    {
+      "id": "EX-001",
+      "description": "Create execution with FK to blueprint",
+      "status": "PASS"
+    },
+    {
+      "id": "EX-002",
+      "description": "Retrieve execution",
+      "status": "PASS"
+    },
+    {
+      "id": "EX-003",
+      "description": "Update execution status",
+      "status": "PASS"
+    },
+    {
+      "id": "EX-004",
+      "description": "List executions",
+      "status": "PASS"
+    },
+    {
+      "id": "EV-001",
+      "description": "Add evidence to execution",
+      "status": "PASS"
+    },
+    {
+      "id": "EV-002",
+      "description": "List evidence for execution",
+      "status": "PASS"
+    },
+    {
+      "id": "PT-001",
+      "description": "Create pattern with dual embeddings",
+      "status": "PASS"
+    },
+    {
+      "id": "PT-002",
+      "description": "Retrieve and increment usage",
+      "status": "PASS"
+    },
+    {
+      "id": "PT-003",
+      "description": "List patterns by score",
+      "status": "PASS"
+    },
+    {
+      "id": "PT-004",
+      "description": "Semantic search patterns",
+      "status": "PASS"
+    },
+    {
+      "id": "UT-001",
+      "description": "Check system health",
+      "status": "PASS"
+    },
+    {
+      "id": "UT-002",
+      "description": "Cross-entity semantic search",
+      "status": "PASS"
+    },
+    {
+      "id": "UT-003",
+      "description": "Test unknown tool handling",
+      "status": "PASS"
+    }
+  ],
+  "testData": {
+    "blueprintId": "8054df57-b5b1-4c98-85d2-57cfe1d8aef1",
+    "blueprintSlug": "test-integration-1756493907306",
+    "executionId": "c7a9a090-22a8-442a-a3f1-8fc8d8368778",
+    "patternId": "0055e32c-557c-4903-89ff-3ceef973a615"
+  }
+}
