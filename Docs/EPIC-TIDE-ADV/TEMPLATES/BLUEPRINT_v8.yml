@@ -6,8 +6,10 @@ BLUEPRINT:
   # === METADATA ===
   # NOTE: id and version are added by storage layer (Gineers-KG), not by AI
   # Claude Code only provides slug and name
-  slug: "[human-friendly-url]"  # e.g., 'kg4epic-phase2' - AI creates this
+  slug: "[human-friendly-url]"  # e.g., 'kg4epic-phase2-2024-01' - AI creates this
   name: "[Human-readable name]"  # e.g., 'KG4EPIC Phase 2' - AI creates this
+  # Slug should be unique within project context (AI can add timestamp if needed)
+  # Storage layer handles true uniqueness via UUID
   
   # === PHASE MANAGEMENT ===
   phase:
