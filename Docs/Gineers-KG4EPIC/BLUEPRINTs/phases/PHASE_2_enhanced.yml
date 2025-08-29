@@ -1,0 +1,258 @@
+# PHASE 2 - Enhanced Embeddings & Pattern Extraction (v5.1 Evidence-Driven)
+# Build upon PHASE_1 foundation with richer embeddings and pattern discovery
+
+PHASE:
+  id: phase_2_enhanced
+  what: "Enhance KG4EPIC with multi-tier embeddings and pattern extraction"
+  version: 1.0
+  
+  # PHASE CONTEXT - High-level strategic information
+  strategy:
+    initiative: "Expand semantic capabilities beyond basic E5-large"
+    evidence_target: "Improved search accuracy and pattern discovery demonstrated"
+    priority: "Medium - Enhances existing functionality"
+    stakeholders: ["Gineers.AI Development Team", "Claude Code Power Users"]
+    
+  # BUSINESS CONTEXT - Why this phase exists
+  business:
+    problem: |
+      PHASE_1 provides basic semantic search but:
+      - Single embedding model limits understanding nuances
+      - No automatic pattern extraction from TIDEs
+      - Cannot differentiate content types (code vs docs vs learnings)
+      
+    value: |
+      - Better search relevance through specialized embeddings
+      - Automatic pattern discovery reduces manual analysis
+      - Content-aware embeddings improve retrieval quality
+      
+    success_metrics:
+      - "Search precision improves by 20%+ over E5-only"
+      - "Patterns automatically extracted from completed TIDEs"
+      - "Content-type specific search capabilities"
+      - "Reduced false positives in semantic search"
+      
+    budget: "Paid tier for OpenAI embeddings"
+    
+    constraints:
+      - "Must maintain backward compatibility with PHASE_1"
+      - "Cannot break existing E5-large embeddings"
+      - "API costs must be manageable"
+      - "No changes to core database schema"
+      
+  # TECHNICAL CONTEXT - High-level technical approach
+  technical:
+    architecture: |
+      Multi-tier embedding strategy:
+      - E5-large-v2: General purpose (1024 dims) - existing
+      - text-embedding-ada-002: Content understanding (1536 dims) - new
+      - Separate columns for each embedding type
+      - Weighted combination for hybrid search
+      
+    platforms:
+      - "Existing: Node.js API + Python embeddings service"
+      - "New: OpenAI API integration"
+      - "Enhanced: Search algorithms with multi-vector support"
+      
+    integrations:
+      - "OpenAI API for ada-002 embeddings"
+      - "Pattern extraction service"
+      - "Enhanced search API endpoints"
+      
+    data_strategy: |
+      - Store multiple embedding types per entity
+      - Use appropriate embedding based on query type
+      - Combine embeddings for comprehensive search
+      - Extract patterns from TIDE execution data
+      
+    security_level: "API key management for OpenAI"
+    
+  # PREREQUISITES FROM PHASE_1
+  prerequisites:
+    verified:
+      - "✅ Database v5.1 schema deployed"
+      - "✅ E5-large-v2 embeddings working"
+      - "✅ Basic semantic search functional"
+      - "✅ 3-container Docker stack operational"
+      
+    gaps_to_address:
+      - "Tests from PHASE_1 technical debt"
+      - "API documentation completion"
+      - "Health check fix for embeddings service"
+      
+  # PATH SEQUENCE - Projects within this phase
+  paths:
+    - path_id: "multi-tier-embeddings"
+      sequence: 1
+      dependency: []
+      purpose: "Add ada-002 embedding tier for content understanding"
+      evidence_required:
+        - "Ada-002 embeddings generated for all content"
+        - "Dual-embedding search working"
+        - "Performance metrics showing improvement"
+        
+    - path_id: "pattern-extraction"  
+      sequence: 2
+      dependency: ["multi-tier-embeddings"]
+      purpose: "Extract patterns from completed TIDEs"
+      evidence_required:
+        - "Patterns automatically identified from TIDEs"
+        - "Pattern storage and retrieval working"
+        - "Pattern search functionality"
+        
+    - path_id: "testing-debt-resolution"
+      sequence: 3
+      dependency: []
+      purpose: "Address PHASE_1 testing technical debt"
+      evidence_required:
+        - "80%+ test coverage achieved"
+        - "Integration tests for all endpoints"
+        - "E2E test suite operational"
+        
+  # SUCCESS CRITERIA - How we know the phase succeeded
+  success_criteria:
+    business:
+      - "Search accuracy improved by 20%+ (measured)"
+      - "Patterns extracted from at least 5 TIDEs"
+      - "Content-aware search differentiates types"
+      - "User feedback confirms better relevance"
+      
+    technical:
+      - "Ada-002 embeddings integrated successfully"
+      - "Multi-vector search algorithm working"
+      - "Pattern extraction pipeline operational"
+      - "All tests passing with 80%+ coverage"
+      
+    operational:
+      - "OpenAI costs within budget (<$50/month)"
+      - "No performance degradation from PHASE_1"
+      - "Backward compatibility maintained"
+      - "Documentation updated for new features"
+      
+  # RISK MANAGEMENT - Phase-level risks
+  risks:
+    - risk: "OpenAI API costs exceed budget"
+      category: "Financial"
+      probability: "Medium"
+      impact: "Medium"
+      mitigation_strategy: "Implement caching and batch processing"
+      contingency: "Rate limit or disable ada-002 temporarily"
+      
+    - risk: "Multiple embeddings slow down search"
+      category: "Technical"
+      probability: "Low"
+      impact: "High"
+      mitigation_strategy: "Optimize queries, add indexes"
+      contingency: "Allow single-embedding fallback mode"
+      
+    - risk: "Pattern extraction too noisy"
+      category: "Technical"
+      probability: "Medium"
+      impact: "Low"
+      mitigation_strategy: "Implement quality thresholds"
+      contingency: "Manual pattern curation option"
+      
+  # RESOURCE PLANNING - What this phase needs
+  resources:
+    teams:
+      - team: "Core Development"
+        commitment: "Part-time - building on stable PHASE_1"
+        skills_needed: ["OpenAI API", "Pattern Recognition", "Testing"]
+        
+    infrastructure:
+      - resource: "OpenAI API Account"
+        requirement: "API key with ada-002 access"
+      - resource: "Additional Database Columns"
+        requirement: "vector(1536) columns for ada-002"
+        
+    external:
+      - resource: "OpenAI text-embedding-ada-002"
+        requirement: "$0.0001 per 1K tokens"
+        
+  # PHASE LEARNINGS - Accumulated from PHASE_1
+  learnings:
+    from_phase_1:
+      - "Python microservice for embeddings more reliable than Node.js"
+      - "Health checks critical for multi-container orchestration"
+      - "Evidence-driven approach prevents premature completion claims"
+      - "Testing should be parallel to development, not after"
+      
+    expected_new:
+      - "Multi-embedding search strategies"
+      - "Pattern extraction algorithms"
+      - "Cost optimization for paid embeddings"
+      - "Content-type detection methods"
+      
+  # PATTERNS TO HARVEST - Expected from this phase
+  patterns_expected:
+    - pattern: "Multi-tier embedding architecture"
+      scope: "Technical"
+      problem: "Single embedding model limits understanding"
+      expected_solution: "Specialized embeddings per content type"
+      
+    - pattern: "Pattern extraction pipeline"
+      scope: "Technical"
+      problem: "Manual pattern identification is slow"
+      expected_solution: "Automated extraction from execution data"
+      
+    - pattern: "Hybrid search algorithm"
+      scope: "Technical"
+      problem: "Combining multiple embedding types"
+      expected_solution: "Weighted vector combination"
+      
+  # EXECUTION STATUS - Current state
+  status:
+    current_state: "Planning"
+    active_paths: []
+    completed_paths: []
+    blocked_paths: []
+    
+  # PHASE COORDINATION - Cross-PATH management
+  coordination:
+    shared_resources:
+      - "PostgreSQL database (from PHASE_1)"
+      - "Docker compose stack (from PHASE_1)"
+      - "Python embeddings service (from PHASE_1)"
+      
+    integration_points:
+      - "Database schema extensions (new columns)"
+      - "API contract additions (new endpoints)"
+      - "Search algorithm enhancements"
+      
+    dependencies_on_phase_1:
+      - "Requires working E5-large embeddings"
+      - "Needs functional Docker stack"
+      - "Builds on existing API structure"
+      
+  # SESSION BOOTSTRAP - For new AI sessions
+  for_new_session: |
+    1. Verify PHASE_1 is complete and operational
+    2. Check prerequisites are met (database, embeddings, Docker)
+    3. Review technical debt items to address
+    4. Start with multi-tier-embeddings PATH
+    5. Use evidence-driven approach - verify each claim
+    6. Document API costs and performance metrics
+    7. Extract patterns as they emerge
+    
+  # REFERENCES - Methodology and related documents
+  references:
+    methodology: "Docs/EPIC-TIDE-ADV/EPIC_TIDE_METHODOLOGY_v5_1_CORRECTED.md"
+    phase_1_completion: "Docs/Gineers-KG4EPIC/EXECUTIONs/phases/PHASE_1_free/PHASE_1_COMPLETION_ASSESSMENT.yml"
+    templates: "Docs/EPIC-TIDE-ADV/TEMPLATES/"
+    related_phases: ["PHASE_1_free", "PHASE_3_full"]
+    
+  # CURRENT FOCUS - What to work on now
+  current_focus:
+    immediate: "Create multi-tier-embeddings PATH blueprint"
+    blocking_issue: "None - PHASE_1 complete"
+    next_milestone: "Ada-002 embeddings integrated and tested"
+    evidence_needed: "Performance comparison E5 vs ada-002"
+    
+# PHASE NOTES
+# This phase enhances PHASE_1's foundation with:
+# 1. Better embeddings for improved search
+# 2. Automatic pattern extraction
+# 3. Resolution of technical debt
+#
+# Key principle: Evidence-driven progress, not time-based
+# Must show measurable improvement over PHASE_1

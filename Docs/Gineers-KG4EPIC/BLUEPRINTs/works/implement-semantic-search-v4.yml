@@ -1,0 +1,632 @@
+# WORK: Implement Semantic Search (v4 AI-Native)
+# Self-contained semantic search implementation using pgvector and E5-large-v2
+
+WORK:
+  id: implement-semantic-search
+  what: "Implement semantic search functionality using pgvector and E5-large-v2 embeddings"
+  
+  # CONTEXT - Task environment
+  context:
+    location: Backend implementation phase with vector search capabilities
+    prerequisites:
+      - "Database schema with vector columns implemented"
+      - "E5-large-v2 embedding service available"
+      - "API endpoints defined for search operations"
+      - "Node.js environment with pgvector client support"
+    outputs:
+      - "Functional semantic search API endpoint"
+      - "Embedding generation and storage system"
+      - "Vector similarity search with ranking"
+      - "Combined text and semantic search capabilities"
+    dependencies: ["design-database-schema", "design-api-contracts", "setup-nodejs-project"]
+    
+  # KNOWLEDGE - Critical semantic search information
+  knowledge:
+    - "E5-large-v2 generates 1024-dimensional embeddings with high semantic accuracy"
+    - "Cosine similarity (vector <=> operator) best for semantic similarity in pgvector"
+    - "Lower cosine distance means higher similarity (0 = identical, 2 = opposite)"
+    - "ivfflat indexes with lists=100 optimal for datasets under 100k records"
+    - "Embedding generation is expensive - cache and batch when possible"
+    - "Similarity threshold 0.7+ typically gives relevant results"
+    - "Combined hybrid search (text + vector) often outperforms pure semantic search"
+  
+  # EXECUTION
+  how:
+    - "Set up embedding service integration with E5-large-v2 model"
+    - "Implement automatic embedding generation for text fields on save"
+    - "Create vector storage with proper dimension validation"
+    - "Implement POST /api/search/semantic endpoint with similarity search"
+    - "Add cosine similarity ranking with configurable thresholds"
+    - "Create hybrid search combining text matching with vector similarity"
+    - "Add performance optimizations and caching"
+  
+  metrics:
+    - "Text content automatically embedded on save operations"
+    - "Semantic search returns relevant results with similarity scores"
+    - "Search performance consistently under 500ms"
+    - "Hybrid search provides better results than pure text or vector alone"
+  
+  # LEARNINGS - From semantic search implementation
+  learnings:
+    - source: "Initial embedding integration"
+      learning: "Embedding service failures should not block record creation - store null vectors"
+    - source: "Vector search optimization"
+      learning: "Pre-filtering with text search before vector similarity reduces computation"
+    - source: "User feedback testing"
+      learning: "Similarity scores need user-friendly interpretation (relevant/somewhat/not relevant)"
+    - source: "Production performance"
+      learning: "Batch embedding generation 10x faster than individual API calls"
+  
+  # TROUBLESHOOTING - Common semantic search issues
+  troubleshooting:
+    - issue: "Embedding generation fails during record creation"
+      symptoms: "500 errors when creating works, null vectors in database"
+      solution: "Implement graceful fallback - save record with null vector"
+      prevention: "Add retry logic and circuit breaker for embedding service"
+    
+    - issue: "Vector similarity search returns poor results"
+      symptoms: "Semantically similar content gets low similarity scores"
+      solution: "Check embedding model consistency, verify vector normalization"
+      prevention: "Add embedding quality validation and similarity score logging"
+    
+    - issue: "Search performance degrades with data size"
+      symptoms: "Query times increase from 100ms to 2s+ with more records"
+      solution: "Ensure ivfflat indexes exist, tune lists parameter"
+      prevention: "Monitor query performance, plan index maintenance"
+    
+    - issue: "Similarity threshold too strict/loose"
+      symptoms: "No results returned or too many irrelevant results"
+      solution: "Make threshold configurable, provide different levels"
+      prevention: "Include similarity score distribution analytics"
+  
+  # COMPLETE IMPLEMENTATION
+  artifacts:
+    embedding_service: |
+      // Embedding Service with E5-large-v2
+      
+      const axios = require('axios');
+      const { createHash } = require('crypto');
+      
+      class EmbeddingService {
+        constructor(options = {}) {
+          this.baseURL = options.baseURL || process.env.EMBEDDING_SERVICE_URL || 'http://localhost:8000';
+          this.model = 'intfloat/e5-large-v2';
+          this.cache = new Map();
+          this.batchSize = options.batchSize || 10;
+        }
+        
+        async generate(text, options = {}) {
+          if (!text || typeof text !== 'string') {
+            return null;
+          }
+          
+          // Check cache first
+          const cacheKey = this._getCacheKey(text);
+          if (this.cache.has(cacheKey)) {
+            return this.cache.get(cacheKey);
+          }
+          
+          try {
+            const response = await axios.post(`${this.baseURL}/embed`, {
+              model: this.model,
+              input: text,
+              normalize: true  // E5-large-v2 benefits from normalization
+            }, {
+              timeout: options.timeout || 10000,
+              retry: options.retry || 3
+            });
+            
+            const embedding = response.data.embedding;
+            
+            // Validate dimensions
+            if (!embedding || embedding.length !== 1024) {
+              throw new Error(`Invalid embedding dimensions: expected 1024, got ${embedding?.length}`);
+            }
+            
+            // Cache result
+            this.cache.set(cacheKey, embedding);
+            
+            return embedding;
+          } catch (error) {
+            console.error('Embedding generation failed:', error.message);
+            return null; // Graceful fallback
+          }
+        }
+        
+        async generateBatch(texts, options = {}) {
+          if (!Array.isArray(texts) || texts.length === 0) {
+            return [];
+          }
+          
+          const results = [];
+          
+          // Process in batches for efficiency
+          for (let i = 0; i < texts.length; i += this.batchSize) {
+            const batch = texts.slice(i, i + this.batchSize);
+            
+            try {
+              const response = await axios.post(`${this.baseURL}/embed/batch`, {
+                model: this.model,
+                inputs: batch,
+                normalize: true
+              }, {
+                timeout: options.timeout || 30000
+              });
+              
+              results.push(...response.data.embeddings);
+            } catch (error) {
+              console.error(`Batch embedding failed for batch ${i}:`, error.message);
+              // Add null embeddings for failed batch
+              results.push(...new Array(batch.length).fill(null));
+            }
+          }
+          
+          return results;
+        }
+        
+        _getCacheKey(text) {
+          return createHash('sha256').update(text).digest('hex');
+        }
+        
+        clearCache() {
+          this.cache.clear();
+        }
+      }
+      
+      module.exports = EmbeddingService;
+    
+    semantic_search_api: |
+      // Semantic Search API Implementation
+      
+      const express = require('express');
+      const { Pool } = require('pg');
+      const EmbeddingService = require('./embedding-service');
+      
+      const router = express.Router();
+      const db = new Pool();
+      const embeddings = new EmbeddingService();
+      
+      // POST /api/search/semantic
+      router.post('/semantic', async (req, res) => {
+        try {
+          const {
+            query,
+            entity_type = 'works',
+            limit = 10,
+            similarity_threshold = 0.7,
+            include_text_search = false
+          } = req.body;
+          
+          // Validate inputs
+          if (!query || query.trim().length < 3) {
+            return res.status(400).json({
+              error: 'Query must be at least 3 characters long'
+            });
+          }
+          
+          if (!['works', 'paths', 'tides', 'patterns'].includes(entity_type)) {
+            return res.status(400).json({
+              error: 'Invalid entity_type: must be works, paths, tides, or patterns'
+            });
+          }
+          
+          // Generate query embedding
+          const queryEmbedding = await embeddings.generate(query);
+          if (!queryEmbedding) {
+            return res.status(503).json({
+              error: 'Embedding service unavailable',
+              fallback: 'Try text search instead'
+            });
+          }
+          
+          // Execute semantic search
+          const results = await performSemanticSearch({
+            queryEmbedding,
+            entityType: entity_type,
+            limit: Math.min(limit, 50), // Cap at 50
+            threshold: Math.max(0, Math.min(similarity_threshold, 1)), // 0-1 range
+            includeTextSearch: include_text_search,
+            textQuery: query
+          });
+          
+          res.json({
+            query,
+            entity_type,
+            results,
+            total: results.length,
+            embedding_model: 'intfloat/e5-large-v2'
+          });
+          
+        } catch (error) {
+          console.error('Semantic search error:', error);
+          res.status(500).json({
+            error: 'Search failed',
+            request_id: req.id
+          });
+        }
+      });
+      
+      async function performSemanticSearch({
+        queryEmbedding,
+        entityType,
+        limit,
+        threshold,
+        includeTextSearch,
+        textQuery
+      }) {
+        let table, vectorColumn, contentColumns;
+        
+        // Configure search based on entity type
+        switch (entityType) {
+          case 'works':
+            table = 'works';
+            vectorColumn = 'what_vector';
+            contentColumns = ['work_id', 'what', 'how', 'metrics', 'created_at'];
+            break;
+          case 'paths':
+            table = 'paths';
+            vectorColumn = 'what_vector';
+            contentColumns = ['path_id', 'what', 'works', 'metrics', 'proven', 'created_at'];
+            break;
+          case 'tides':
+            table = 'tides';
+            vectorColumn = 'learnings_vector';
+            contentColumns = ['tide_id', 'path_id', 'learnings', 'outcome', 'adaptations', 'completed_at'];
+            break;
+          case 'patterns':
+            table = 'patterns';
+            vectorColumn = 'pattern_vector';
+            contentColumns = ['pattern_id', 'common_sequence', 'proven_adaptations', 'created_at'];
+            break;
+        }
+        
+        let query, params;
+        
+        if (includeTextSearch && textQuery) {
+          // Hybrid search: combine text and vector similarity
+          query = `
+            WITH text_matches AS (
+              SELECT *, ts_rank(to_tsvector('english', what), plainto_tsquery('english', $2)) as text_score
+              FROM ${table}
+              WHERE to_tsvector('english', what) @@ plainto_tsquery('english', $2)
+            ),
+            vector_matches AS (
+              SELECT *, 
+                     1 - (${vectorColumn} <=> $1::vector) as similarity_score
+              FROM ${table}
+              WHERE ${vectorColumn} IS NOT NULL
+                AND ${vectorColumn} <=> $1::vector < $3
+            )
+            SELECT COALESCE(t.${contentColumns.join(', t.')}, v.${contentColumns.join(', v.')}),
+                   COALESCE(t.text_score, 0) as text_score,
+                   COALESCE(v.similarity_score, 0) as similarity_score,
+                   (COALESCE(t.text_score, 0) * 0.3 + COALESCE(v.similarity_score, 0) * 0.7) as combined_score
+            FROM text_matches t
+            FULL OUTER JOIN vector_matches v ON t.${contentColumns[0]} = v.${contentColumns[0]}
+            ORDER BY combined_score DESC
+            LIMIT $4
+          `;
+          params = [queryEmbedding, textQuery, 1 - threshold, limit];
+        } else {
+          // Pure semantic search
+          query = `
+            SELECT ${contentColumns.join(', ')},
+                   1 - (${vectorColumn} <=> $1::vector) as similarity_score
+            FROM ${table}
+            WHERE ${vectorColumn} IS NOT NULL
+              AND ${vectorColumn} <=> $1::vector < $2
+            ORDER BY ${vectorColumn} <=> $1::vector ASC
+            LIMIT $3
+          `;
+          params = [queryEmbedding, 1 - threshold, limit];
+        }
+        
+        const result = await db.query(query, params);
+        
+        return result.rows.map(row => ({
+          ...row,
+          similarity_score: parseFloat(row.similarity_score?.toFixed(4) || '0'),
+          relevance: getRelevanceLevel(row.similarity_score)
+        }));
+      }
+      
+      function getRelevanceLevel(score) {
+        if (score >= 0.9) return 'highly_relevant';
+        if (score >= 0.7) return 'relevant';
+        if (score >= 0.5) return 'somewhat_relevant';
+        return 'low_relevance';
+      }
+      
+      module.exports = router;
+    
+    auto_embedding_middleware: |
+      // Automatic Embedding Generation Middleware
+      
+      const EmbeddingService = require('./embedding-service');
+      
+      class AutoEmbeddingMiddleware {
+        constructor(options = {}) {
+          this.embeddings = new EmbeddingService(options);
+          this.enabled = options.enabled !== false;
+        }
+        
+        // Middleware for WORK creation/updates
+        async processWorkEmbeddings(workData) {
+          if (!this.enabled) return workData;
+          
+          const embeddings = {};
+          
+          // Generate embeddings for semantic fields
+          if (workData.what) {
+            embeddings.what_vector = await this.embeddings.generate(workData.what);
+          }
+          
+          if (workData.how && Array.isArray(workData.how)) {
+            const combinedHow = workData.how.join(' ');
+            embeddings.how_vector = await this.embeddings.generate(combinedHow);
+          }
+          
+          return { ...workData, ...embeddings };
+        }
+        
+        // Middleware for PATH creation/updates
+        async processPathEmbeddings(pathData) {
+          if (!this.enabled) return pathData;
+          
+          const embeddings = {};
+          
+          if (pathData.what) {
+            embeddings.what_vector = await this.embeddings.generate(pathData.what);
+          }
+          
+          return { ...pathData, ...embeddings };
+        }
+        
+        // Middleware for TIDE updates
+        async processTideEmbeddings(tideData) {
+          if (!this.enabled) return tideData;
+          
+          const embeddings = {};
+          
+          if (tideData.learnings) {
+            embeddings.learnings_vector = await this.embeddings.generate(tideData.learnings);
+          }
+          
+          return { ...tideData, ...embeddings };
+        }
+        
+        // Batch processing for existing data
+        async backfillEmbeddings(entityType, batchSize = 100) {
+          console.log(`Starting embedding backfill for ${entityType}...`);
+          
+          let processed = 0;
+          let offset = 0;
+          
+          while (true) {
+            const records = await this._fetchBatch(entityType, offset, batchSize);
+            
+            if (records.length === 0) break;
+            
+            const updates = [];
+            
+            for (const record of records) {
+              const embeddings = await this._generateEmbeddingsForRecord(entityType, record);
+              if (embeddings) {
+                updates.push({ id: record[`${entityType.slice(0, -1)}_id`], embeddings });
+              }
+            }
+            
+            await this._batchUpdateEmbeddings(entityType, updates);
+            
+            processed += records.length;
+            offset += batchSize;
+            
+            console.log(`Processed ${processed} ${entityType}...`);
+          }
+          
+          console.log(`Embedding backfill complete for ${entityType}: ${processed} records`);
+        }
+        
+        async _fetchBatch(entityType, offset, limit) {
+          const query = `
+            SELECT * FROM ${entityType}
+            WHERE ${entityType === 'works' ? 'what_vector' : 
+                   entityType === 'paths' ? 'what_vector' :
+                   entityType === 'tides' ? 'learnings_vector' : 'pattern_vector'} IS NULL
+            LIMIT $1 OFFSET $2
+          `;
+          
+          const result = await db.query(query, [limit, offset]);
+          return result.rows;
+        }
+        
+        async _generateEmbeddingsForRecord(entityType, record) {
+          switch (entityType) {
+            case 'works':
+              return await this.processWorkEmbeddings(record);
+            case 'paths':
+              return await this.processPathEmbeddings(record);
+            case 'tides':
+              return await this.processTideEmbeddings(record);
+            default:
+              return null;
+          }
+        }
+        
+        async _batchUpdateEmbeddings(entityType, updates) {
+          if (updates.length === 0) return;
+          
+          const idColumn = `${entityType.slice(0, -1)}_id`;
+          const values = updates.map((update, index) => {
+            const params = [`$${index * 3 + 1}`, `$${index * 3 + 2}`, `$${index * 3 + 3}`];
+            return `(${params.join(', ')})`;
+          }).join(', ');
+          
+          const flatParams = updates.flatMap(update => [
+            update.id,
+            update.embeddings.what_vector || update.embeddings.learnings_vector,
+            JSON.stringify(update.embeddings)
+          ]);
+          
+          const query = `
+            UPDATE ${entityType} SET
+              ${entityType === 'works' ? 'what_vector' : 
+                entityType === 'paths' ? 'what_vector' :
+                entityType === 'tides' ? 'learnings_vector' : 'pattern_vector'} = data.vector,
+              updated_at = NOW()
+            FROM (VALUES ${values}) AS data(id, vector, embeddings)
+            WHERE ${entityType}.${idColumn} = data.id
+          `;
+          
+          await db.query(query, flatParams);
+        }
+      }
+      
+      module.exports = AutoEmbeddingMiddleware;
+    
+    performance_optimizations: |
+      // Performance Optimizations for Semantic Search
+      
+      const NodeCache = require('node-cache');
+      
+      class SemanticSearchOptimizer {
+        constructor(options = {}) {
+          // Cache for query embeddings (30 minutes TTL)
+          this.embeddingCache = new NodeCache({ 
+            stdTTL: 1800,
+            maxKeys: 1000 
+          });
+          
+          // Cache for search results (5 minutes TTL)
+          this.resultCache = new NodeCache({
+            stdTTL: 300,
+            maxKeys: 500
+          });
+          
+          this.prefilterEnabled = options.prefilterEnabled !== false;
+          this.cacheEnabled = options.cacheEnabled !== false;
+        }
+        
+        async optimizedSemanticSearch(searchParams) {
+          const cacheKey = this._getResultCacheKey(searchParams);
+          
+          // Check result cache
+          if (this.cacheEnabled && this.resultCache.has(cacheKey)) {
+            return {
+              ...this.resultCache.get(cacheKey),
+              cached: true
+            };
+          }
+          
+          let results;
+          
+          if (this.prefilterEnabled) {
+            results = await this._prefilterSearch(searchParams);
+          } else {
+            results = await this._directVectorSearch(searchParams);
+          }
+          
+          // Cache results
+          if (this.cacheEnabled && results.length > 0) {
+            this.resultCache.set(cacheKey, results);
+          }
+          
+          return results;
+        }
+        
+        async _prefilterSearch({ queryEmbedding, entityType, limit, threshold, textQuery }) {
+          // First, do a fast text-based pre-filter to reduce vector search space
+          const prefilterQuery = `
+            SELECT ${this._getEntityColumns(entityType)},
+                   ${this._getVectorColumn(entityType)}
+            FROM ${entityType}
+            WHERE ${this._getVectorColumn(entityType)} IS NOT NULL
+            ${textQuery ? `AND to_tsvector('english', what) @@ plainto_tsquery('english', $2)` : ''}
+            LIMIT ${limit * 3}  -- Get more candidates for better results
+          `;
+          
+          const params = textQuery ? [queryEmbedding, textQuery] : [queryEmbedding];
+          const candidates = await db.query(prefilterQuery, params);
+          
+          if (candidates.rows.length === 0) {
+            return [];
+          }
+          
+          // Then apply vector similarity on the smaller candidate set
+          const vectorQuery = `
+            SELECT *,
+                   1 - (${this._getVectorColumn(entityType)} <=> $1::vector) as similarity_score
+            FROM (${prefilterQuery}) candidates
+            WHERE ${this._getVectorColumn(entityType)} <=> $1::vector < $${params.length + 1}
+            ORDER BY ${this._getVectorColumn(entityType)} <=> $1::vector ASC
+            LIMIT $${params.length + 2}
+          `;
+          
+          const finalParams = [...params, 1 - threshold, limit];
+          const result = await db.query(vectorQuery, finalParams);
+          
+          return result.rows;
+        }
+        
+        async _directVectorSearch({ queryEmbedding, entityType, limit, threshold }) {
+          const query = `
+            SELECT ${this._getEntityColumns(entityType)},
+                   1 - (${this._getVectorColumn(entityType)} <=> $1::vector) as similarity_score
+            FROM ${entityType}
+            WHERE ${this._getVectorColumn(entityType)} IS NOT NULL
+              AND ${this._getVectorColumn(entityType)} <=> $1::vector < $2
+            ORDER BY ${this._getVectorColumn(entityType)} <=> $1::vector ASC
+            LIMIT $3
+          `;
+          
+          const result = await db.query(query, [queryEmbedding, 1 - threshold, limit]);
+          return result.rows;
+        }
+        
+        // Utility methods
+        _getEntityColumns(entityType) {
+          const columnMap = {
+            'works': 'work_id, what, how, metrics, created_at',
+            'paths': 'path_id, what, works, metrics, proven, created_at',
+            'tides': 'tide_id, path_id, learnings, outcome, adaptations, completed_at',
+            'patterns': 'pattern_id, common_sequence, proven_adaptations, created_at'
+          };
+          return columnMap[entityType];
+        }
+        
+        _getVectorColumn(entityType) {
+          const vectorMap = {
+            'works': 'what_vector',
+            'paths': 'what_vector', 
+            'tides': 'learnings_vector',
+            'patterns': 'pattern_vector'
+          };
+          return vectorMap[entityType];
+        }
+        
+        _getResultCacheKey({ query, entityType, limit, threshold }) {
+          return `${entityType}:${query}:${limit}:${threshold}`;
+        }
+        
+        clearCaches() {
+          this.embeddingCache.flushAll();
+          this.resultCache.flushAll();
+        }
+        
+        getCacheStats() {
+          return {
+            embedding_cache: {
+              keys: this.embeddingCache.keys().length,
+              hits: this.embeddingCache.getStats().hits,
+              misses: this.embeddingCache.getStats().misses
+            },
+            result_cache: {
+              keys: this.resultCache.keys().length,
+              hits: this.resultCache.getStats().hits,
+              misses: this.resultCache.getStats().misses
+            }
+          };
+        }
+      }
+      
+      module.exports = SemanticSearchOptimizer;

@@ -1,0 +1,205 @@
+# WORK: Setup Docker Environment (v5 AI-Native)
+# Self-contained execution unit with embedded context and phase alignment
+
+WORK:
+  id: setup-docker-environment
+  what: "Setup Docker compose stack for gineers-kg4epic with PostgreSQL+pgvector"
+  version: 5.0
+  
+  # PHASE CONTEXT - How this WORK contributes to PHASE_1_free
+  phase_context:
+    phase_id: "phase_1_free"
+    contribution: "Provides the complete containerized infrastructure for the KG4EPIC API server, including PostgreSQL with pgvector for semantic search capabilities essential to EPIC-TIDE knowledge capture"
+    phase_objectives_supported:
+      - "Docker stack 'gineers-kg4epic' runs reliably (direct technical success criteria)"
+      - "pgvector semantic search returns relevant results"
+      - "E5-large-v2 embeddings generated consistently"
+    shared_dependencies:
+      - "Node.js project foundation (from setup-nodejs-project WORK)"
+      - "Database schema definitions (from design-database-schema WORK)" 
+      - "API implementation (from implement-post-api WORK)"
+    success_alignment:
+      technical: "Directly enables 'Docker stack gineers-kg4epic runs reliably' success criteria"
+      business: "Provides infrastructure for capturing and retrieving EPIC-TIDE data with semantic search"
+      operational: "Creates scalable foundation supporting future team member onboarding"
+    phase_risks_addressed:
+      - "Docker networking complexity: Comprehensive compose setup with clear networking rules"
+      - "E5-large-v2 performance bottlenecks: Container resource allocation and persistence"
+      - "Environment consistency: Standardized development setup across team members"
+  
+  # CONTEXT - Environment and dependencies
+  context:
+    location: /Users/inseokseo/Gineers-Projects/Gineers-KG4EPIC
+    prerequisites: 
+      - "Docker Desktop installed and running"
+      - "package.json exists (from setup-nodejs-project)"
+    outputs:
+      - "Docker stack 'gineers-kg4epic' running"
+      - "PostgreSQL with pgvector on port 5432"
+      - "API container ready on port 3000"
+    dependencies: ["setup-nodejs-project"]
+    
+  # KNOWLEDGE - Critical information
+  knowledge:
+    - "pgvector/pgvector:pg15 image includes vector extension pre-installed"
+    - "E5-large-v2 embeddings are 1024 dimensions"
+    - "Connection pooling critical for production (default 100 connections)"
+    - "Health checks prevent API starting before database ready"
+    - "Named volumes persist data between container restarts"
+  
+  # EXECUTION
+  how:
+    - "Create docker-compose.yml with stack name gineers-kg4epic"
+    - "Configure PostgreSQL service with pgvector"
+    - "Configure API server service with health checks"
+    - "Create .env file from template"
+    - "Run docker-compose up"
+  
+  metrics:
+    - "Docker compose up runs without errors"
+    - "PostgreSQL accepts connections"
+    - "pgvector extension enabled"
+    - "API service healthy"
+  
+  # LEARNINGS - From development experience
+  learnings:
+    - source: "Development"
+      learning: "Must use 'pgvector/pgvector' image, not standard postgres"
+    - source: "Testing"
+      learning: "Health check essential - API fails if connects before DB ready"
+    - source: "Production prep"
+      learning: "Named volumes required for data persistence"
+  
+  # TROUBLESHOOTING - Known issues and fixes
+  troubleshooting:
+    - issue: "Port 5432 already in use"
+      symptoms: "Error: bind: address already in use"
+      solution: "Stop local PostgreSQL or change port mapping to 5433:5432"
+      prevention: "Check ports with 'lsof -i :5432' before starting"
+    
+    - issue: "pgvector extension not found"
+      symptoms: "ERROR: extension 'vector' not available"
+      solution: "Ensure using pgvector/pgvector:pg15 image, not postgres:15"
+      
+    - issue: "API can't connect to database"
+      symptoms: "Connection refused or ECONNREFUSED"
+      solution: "Check DATABASE_URL uses service name 'postgres' not 'localhost'"
+      prevention: "Use container name in connection string"
+  
+  # COMPLETE IMPLEMENTATION
+  artifacts:
+    docker_compose: |
+      version: '3.8'
+      
+      name: gineers-kg4epic
+      
+      services:
+        postgres:
+          image: pgvector/pgvector:pg15
+          container_name: kg4epic-postgres
+          environment:
+            POSTGRES_DB: epic_tide
+            POSTGRES_USER: epic_user
+            POSTGRES_PASSWORD: ${DB_PASSWORD:-epic_pass}
+          ports:
+            - "5432:5432"
+          volumes:
+            - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+            - pgdata:/var/lib/postgresql/data
+          healthcheck:
+            test: ["CMD-SHELL", "pg_isready -U epic_user -d epic_tide"]
+            interval: 10s
+            timeout: 5s
+            retries: 5
+          networks:
+            - kg4epic-network
+        
+        api:
+          build:
+            context: .
+            dockerfile: Dockerfile
+          container_name: kg4epic-api
+          environment:
+            NODE_ENV: ${NODE_ENV:-development}
+            PORT: 3000
+            DATABASE_URL: postgresql://epic_user:${DB_PASSWORD:-epic_pass}@postgres:5432/epic_tide
+            API_KEY: ${API_KEY:-dev_key_change_in_production}
+            EMBEDDING_MODEL: intfloat/e5-large-v2
+          ports:
+            - "3000:3000"
+          volumes:
+            - ./src:/app/src
+            - ./node_modules:/app/node_modules
+          depends_on:
+            postgres:
+              condition: service_healthy
+          networks:
+            - kg4epic-network
+          command: npm run dev
+      
+      volumes:
+        pgdata:
+      
+      networks:
+        kg4epic-network:
+          driver: bridge
+    
+    dockerfile: |
+      FROM node:18-alpine
+      
+      WORKDIR /app
+      
+      # Copy package files
+      COPY package*.json ./
+      
+      # Install dependencies
+      RUN npm ci --only=production
+      
+      # Copy application
+      COPY . .
+      
+      # Build TypeScript
+      RUN npm run build
+      
+      EXPOSE 3000
+      
+      CMD ["npm", "start"]
+    
+    env_template: |
+      # Database
+      DB_PASSWORD=change_me_in_production
+      
+      # API
+      NODE_ENV=development
+      API_KEY=your_secure_api_key_here
+      
+      # Embeddings
+      EMBEDDING_MODEL=intfloat/e5-large-v2
+    
+    init_sql: |
+      -- Enable required extensions
+      CREATE EXTENSION IF NOT EXISTS vector;
+      CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+      CREATE EXTENSION IF NOT EXISTS pgcrypto;
+      
+      -- Create epic_tide schema
+      CREATE SCHEMA IF NOT EXISTS epic_tide;
+    
+    commands: |
+      # Create .env from template
+      cp artifacts.env_template .env
+      
+      # Start services
+      docker-compose up -d
+      
+      # Check health
+      docker-compose ps
+      
+      # View logs
+      docker-compose logs -f
+      
+      # Stop services
+      docker-compose down
+      
+      # Clean everything (including volumes)
+      docker-compose down -v

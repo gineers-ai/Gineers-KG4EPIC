@@ -1,0 +1,329 @@
+# WORK: Complete Docker Stack for One-Command Startup
+# Ensures full KG4EPIC stack runs with single docker-compose command
+
+WORK:
+  id: complete-docker-stack-v5
+  what: "Create complete Docker orchestration for KG4EPIC stack"
+  why: "TIDE_1 has separate containers but no unified orchestration"
+  how: "Create docker-compose.yml with all services, health checks, and proper networking"
+  version: 1.0
+  
+  # CONTEXT - Everything needed to understand this WORK
+  context:
+    background: |
+      Current state from TIDE_1:
+      - kg4epic-postgres container running separately
+      - kg4epic-api container running separately
+      - Manual network creation required
+      - No health checks or restart policies
+      - Environment variables scattered
+      
+    requirements: |
+      - Single command startup: docker-compose up
+      - Automatic database initialization
+      - Health checks for all services
+      - Proper service dependencies
+      - Development and production configs
+      
+    dependencies:
+      - Dockerfile for API (exists)
+      - PostgreSQL with pgvector image
+      - Database migration scripts
+      - Environment configuration
+      
+  # KNOWLEDGE - Critical information for execution
+  knowledge:
+    docker_compose_v3: |
+      - Version 3.8 for modern features
+      - Health checks prevent cascading failures
+      - depends_on with conditions ensures order
+      - Networks for service isolation
+      - Volumes for data persistence
+      
+    service_dependencies: |
+      API depends on:
+      - Database being healthy
+      - Migrations completed
+      - E5 model downloaded
+      
+    health_check_strategy: |
+      PostgreSQL: pg_isready command
+      API: /api/health endpoint
+      Interval: 10s, timeout: 5s, retries: 5
+      
+  # ARTIFACTS - Implementation details
+  artifacts:
+    docker_compose: |
+      # docker-compose.yml
+      version: '3.8'
+      
+      services:
+        # PostgreSQL with pgvector
+        postgres:
+          image: pgvector/pgvector:pg15
+          container_name: kg4epic-postgres
+          environment:
+            POSTGRES_USER: kg4epic_user
+            POSTGRES_PASSWORD: kg4epic_pass
+            POSTGRES_DB: kg4epic_db
+          ports:
+            - "5432:5432"
+          volumes:
+            - postgres_data:/var/lib/postgresql/data
+            - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/01-init.sql
+            - ./scripts/schema-v5.1.sql:/docker-entrypoint-initdb.d/02-schema.sql
+          healthcheck:
+            test: ["CMD-SHELL", "pg_isready -U kg4epic_user -d kg4epic_db"]
+            interval: 10s
+            timeout: 5s
+            retries: 5
+          networks:
+            - kg4epic-network
+          restart: unless-stopped
+      
+        # Database migrations
+        migrate:
+          image: migrate/migrate:latest
+          container_name: kg4epic-migrate
+          volumes:
+            - ./migrations:/migrations
+          command: [
+            "-path=/migrations",
+            "-database=postgresql://kg4epic_user:kg4epic_pass@postgres:5432/kg4epic_db?sslmode=disable",
+            "up"
+          ]
+          depends_on:
+            postgres:
+              condition: service_healthy
+          networks:
+            - kg4epic-network
+      
+        # API Server
+        api:
+          build:
+            context: .
+            dockerfile: Dockerfile
+          container_name: kg4epic-api
+          environment:
+            NODE_ENV: ${NODE_ENV:-development}
+            PORT: 3000
+            DATABASE_URL: postgresql://kg4epic_user:kg4epic_pass@postgres:5432/kg4epic_db
+            API_KEY: ${API_KEY:-dev_api_key_123}
+            EMBEDDING_MODEL: intfloat/e5-large-v2
+            EMBEDDING_CACHE: /app/.cache
+          ports:
+            - "3000:3000"
+          volumes:
+            - ./src:/app/src
+            - e5_cache:/app/.cache
+          depends_on:
+            postgres:
+              condition: service_healthy
+            migrate:
+              condition: service_completed_successfully
+          healthcheck:
+            test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
+            interval: 30s
+            timeout: 10s
+            retries: 3
+            start_period: 60s
+          networks:
+            - kg4epic-network
+          restart: unless-stopped
+      
+      networks:
+        kg4epic-network:
+          driver: bridge
+      
+      volumes:
+        postgres_data:
+          driver: local
+        e5_cache:
+          driver: local
+          
+    docker_compose_dev: |
+      # docker-compose.dev.yml
+      version: '3.8'
+      
+      services:
+        # Override for development
+        api:
+          build:
+            context: .
+            dockerfile: Dockerfile.dev
+          volumes:
+            - ./src:/app/src
+            - ./tests:/app/tests
+            - ./node_modules:/app/node_modules
+          environment:
+            NODE_ENV: development
+            DEBUG: kg4epic:*
+          command: ["npm", "run", "dev"]
+          
+    docker_compose_prod: |
+      # docker-compose.prod.yml  
+      version: '3.8'
+      
+      services:
+        postgres:
+          environment:
+            POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+          volumes:
+            - postgres_data_prod:/var/lib/postgresql/data
+            
+        api:
+          image: kg4epic/api:${VERSION:-latest}
+          environment:
+            NODE_ENV: production
+            API_KEY: ${API_KEY}
+            DATABASE_URL: ${DATABASE_URL}
+          restart: always
+          
+      volumes:
+        postgres_data_prod:
+          external: true
+          
+    init_script: |
+      -- scripts/init-db.sql
+      -- Initial database setup
+      
+      -- Create user if not exists
+      DO
+      $do$
+      BEGIN
+        IF NOT EXISTS (
+          SELECT FROM pg_catalog.pg_roles
+          WHERE rolname = 'kg4epic_user') THEN
+          CREATE ROLE kg4epic_user LOGIN PASSWORD 'kg4epic_pass';
+        END IF;
+      END
+      $do$;
+      
+      -- Grant privileges
+      GRANT ALL PRIVILEGES ON DATABASE kg4epic_db TO kg4epic_user;
+      
+      -- Create extensions
+      CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+      CREATE EXTENSION IF NOT EXISTS vector;
+      
+    health_endpoint: |
+      // src/api/routes/health.ts
+      import { Router } from 'express';
+      import { Pool } from 'pg';
+      
+      const router = Router();
+      
+      router.get('/health', async (req, res) => {
+        const health = {
+          status: 'healthy',
+          timestamp: new Date().toISOString(),
+          services: {}
+        };
+        
+        // Check database
+        try {
+          const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+          await pool.query('SELECT 1');
+          health.services.database = 'healthy';
+          await pool.end();
+        } catch (error) {
+          health.services.database = 'unhealthy';
+          health.status = 'degraded';
+        }
+        
+        // Check embedding service
+        try {
+          const { isModelLoaded } = require('../../services/embedding');
+          health.services.embedding = isModelLoaded() ? 'ready' : 'loading';
+        } catch (error) {
+          health.services.embedding = 'error';
+          health.status = 'degraded';
+        }
+        
+        const statusCode = health.status === 'healthy' ? 200 : 503;
+        res.status(statusCode).json(health);
+      });
+      
+      export default router;
+      
+    makefile: |
+      # Makefile for common operations
+      .PHONY: help up down logs clean test
+      
+      help:
+      	@echo "KG4EPIC Docker Stack Commands:"
+      	@echo "  make up       - Start all services"
+      	@echo "  make down     - Stop all services"
+      	@echo "  make logs     - Show logs"
+      	@echo "  make clean    - Clean volumes and containers"
+      	@echo "  make test     - Run tests in Docker"
+      	@echo "  make dev      - Start in development mode"
+      	@echo "  make prod     - Start in production mode"
+      
+      up:
+      	docker-compose up -d
+      	@echo "Waiting for services to be healthy..."
+      	@sleep 10
+      	docker-compose ps
+      
+      down:
+      	docker-compose down
+      
+      logs:
+      	docker-compose logs -f
+      
+      clean:
+      	docker-compose down -v
+      	docker system prune -f
+      
+      test:
+      	docker-compose -f docker-compose.yml -f docker-compose.test.yml up --abort-on-container-exit
+      
+      dev:
+      	docker-compose -f docker-compose.yml -f docker-compose.dev.yml up
+      
+      prod:
+      	docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+      
+  # TROUBLESHOOTING - Known issues and solutions
+  troubleshooting:
+    postgres_init_failed: |
+      Problem: PostgreSQL fails to initialize
+      Solution: Remove volume and restart: docker-compose down -v && docker-compose up
+      
+    api_cannot_connect: |
+      Problem: API cannot connect to database
+      Solution: Use service name 'postgres' not 'localhost' in DATABASE_URL
+      
+    health_check_timeout: |
+      Problem: Services never become healthy
+      Solution: Increase start_period for slow-starting services
+      
+    port_already_in_use: |
+      Problem: Port 3000 or 5432 already in use
+      Solution: Change ports in docker-compose.yml or stop conflicting services
+      
+  # SUCCESS CRITERIA
+  success_criteria:
+    - Single command starts entire stack
+    - All services report healthy
+    - API can query database
+    - Migrations run automatically
+    - Logs accessible via docker-compose logs
+    - Clean shutdown with data persistence
+    
+  # EXECUTION NOTES
+  execution_notes: |
+    1. Create docker-compose.yml in project root
+    2. Add health check endpoint to API
+    3. Create initialization scripts
+    4. Test with docker-compose up
+    5. Verify all services healthy
+    6. Create Makefile for convenience
+    7. Document startup process
+    
+  # PHASE ALIGNMENT
+  phase_context:
+    phase_id: phase_1_free
+    contribution: "Completes operational infrastructure for KG4EPIC"
+    enables: "Single-command deployment and development environment"

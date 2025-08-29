@@ -1,0 +1,128 @@
+# WORK: Setup Node.js Project (v5 AI-Native)
+# Self-contained with all necessary context and phase alignment
+
+WORK:
+  id: setup-nodejs-project
+  what: "Initialize Node.js project in KG4EPIC root"
+  version: 5.0
+  
+  # PHASE CONTEXT - How this WORK contributes to PHASE_1_free
+  phase_context:
+    phase_id: "phase_1_free"
+    contribution: "Establishes the foundational Node.js + TypeScript runtime for the KG4EPIC API server, enabling immediate EPIC-TIDE methodology implementation"
+    phase_objectives_supported:
+      - "Core MVP API with essential endpoints for EPIC-TIDE operations"
+      - "Enable systematic knowledge capture and reuse from AI development sessions"
+      - "Build foundational KG4EPIC API server for immediate EPIC-TIDE adoption"
+    shared_dependencies:
+      - "PostgreSQL database schema (from design-database-schema WORK)"
+      - "Docker compose stack configuration"
+      - "E5-large-v2 embedding service integration"
+    success_alignment:
+      technical: "Provides runtime foundation for 'Docker stack gineers-kg4epic runs reliably'"
+      business: "Enables capturing WORKs, PATHs, and TIDEs from development sessions"
+      operational: "Creates extensible foundation for new EPIC-TIDE features"
+    phase_risks_addressed:
+      - "E5-large-v2 model performance: Provides framework for caching and batch processing"
+      - "API security model: Establishes type-safe foundation with validation capabilities"
+  
+  # CONTEXT (specific to this task)
+  context:
+    location: /Users/inseokseo/Gineers-Projects/Gineers-KG4EPIC
+    prerequisites: "None - this is the first WORK"
+    outputs_for_next: "package.json for Docker build"
+    
+  # CRITICAL KNOWLEDGE
+  knowledge:
+    - "Use TypeScript for type safety with EPIC-TIDE structures"
+    - "@xenova/transformers for E5-large-v2 embeddings"
+    - "pgvector package for PostgreSQL vector operations"
+    - "POST-only so no need for complex routing"
+  
+  how:
+    - "Initialize npm project in project root"
+    - "Install dependencies from artifacts.package_json"
+    - "Configure TypeScript with artifacts.tsconfig_json"
+    - "Create src/ directory structure"
+  
+  metrics:
+    - "npm install succeeds"
+    - "TypeScript compiles without errors"
+    - "npm run dev starts server"
+  
+  # LEARNINGS FROM PAST ATTEMPTS
+  learnings:
+    - "Must use pgvector 0.1.5+ for Node.js compatibility"
+    - "E5-large-v2 requires significant memory (2GB+)"
+    - "nodemon configuration essential for development"
+  
+  # COMPLETE IMPLEMENTATION
+  artifacts:
+    package_json: |
+      {
+        "name": "gineers-kg4epic",
+        "version": "1.0.0",
+        "description": "EPIC-TIDE Knowledge Graph API Server",
+        "main": "dist/index.js",
+        "scripts": {
+          "dev": "nodemon --exec ts-node src/index.ts",
+          "build": "tsc",
+          "start": "node dist/index.js",
+          "test": "jest"
+        },
+        "dependencies": {
+          "express": "^4.18.2",
+          "@types/express": "^4.17.21",
+          "cors": "^2.8.5",
+          "helmet": "^7.1.0",
+          "dotenv": "^16.3.1",
+          "pg": "^8.11.3",
+          "pgvector": "^0.1.5",
+          "@xenova/transformers": "^2.6.0",
+          "joi": "^17.11.0",
+          "winston": "^3.11.0",
+          "express-rate-limit": "^7.1.5"
+        },
+        "devDependencies": {
+          "typescript": "^5.3.3",
+          "ts-node": "^10.9.2",
+          "nodemon": "^3.0.2",
+          "@types/node": "^20.10.5",
+          "@types/cors": "^2.8.17",
+          "@types/pg": "^8.10.9",
+          "jest": "^29.7.0",
+          "@types/jest": "^29.5.11",
+          "ts-jest": "^29.1.1"
+        }
+      }
+    
+    tsconfig_json: |
+      {
+        "compilerOptions": {
+          "target": "ES2022",
+          "module": "commonjs",
+          "outDir": "./dist",
+          "rootDir": "./src",
+          "strict": true,
+          "esModuleInterop": true,
+          "skipLibCheck": true,
+          "forceConsistentCasingInFileNames": true,
+          "resolveJsonModule": true
+        },
+        "include": ["src/**/*"],
+        "exclude": ["node_modules", "dist"]
+      }
+    
+    initial_structure: |
+      mkdir -p src/{api/{routes,middleware,validators},services,config,types}
+      touch src/index.ts src/app.ts
+      touch src/config/database.ts
+      touch src/services/{embedding,storage}.ts
+      touch src/types/epic-tide.ts
+    
+  # TROUBLESHOOTING (from experience)
+  troubleshooting:
+    - issue: "Module not found: @xenova/transformers"
+      solution: "Run npm install again, requires postinstall scripts"
+    - issue: "TypeScript errors on pgvector"
+      solution: "Add 'skipLibCheck: true' to tsconfig.json"

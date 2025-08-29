@@ -1,0 +1,97 @@
+# PATH Template v5.1 - AI-Native (Corrected Hierarchy)
+# Blueprint nested under PHASE with shared WORK references
+
+PATH:
+  id: project-name  # lowercase-hyphenated
+  what: "Project goal"
+  version: 1.0
+  phase_id: "parent-phase"  # Reference to containing PHASE
+  
+  # PROJECT CONTEXT - For AI session bootstrap
+  project:
+    root: "/full/path/to/project"
+    type: "System type (API, CLI, Library, etc.)"
+    status: "Current state (Planning, In Progress, Testing, etc.)"
+    language: "Primary language"
+    framework: "Main framework"
+    
+  # CRITICAL DECISIONS - Architectural choices made
+  decisions:
+    architecture: "Monolith, Microservice, etc."
+    database: "PostgreSQL, MongoDB, etc."
+    security: "Auth approach, encryption, etc."
+    deployment: "Docker, K8s, Lambda, etc."
+    rationale: "Why these choices"
+    
+  # WORK REFERENCES - From shared pool (v5.1)
+  works:
+    - ref: "../../../works/work-1-v4.yml"  # Reference to shared WORK
+      purpose: "Why this work is needed"
+      sequence: 1
+    - ref: "../../../works/work-2-v4.yml"
+      purpose: "Build on work-1 output"
+      sequence: 2
+    - parallel:        # Can be parallel
+        - ref: "../../../works/work-3a-v4.yml"
+          purpose: "Optional enhancement"
+        - ref: "../../../works/work-3b-v4.yml"
+          purpose: "Alternative approach"
+    - ref: "../../../works/work-4-v4.yml"
+      purpose: "Final integration"
+      sequence: 4
+  
+  # SUCCESS METRICS - How we know it's done
+  metrics:
+    - "System-level success criterion 1"
+    - "Business-level success criterion 2"
+    - "Performance benchmark"
+    
+  # ACCUMULATED LEARNINGS - From all TIDEs
+  learnings:
+    project_level:
+      - "Major insight about the approach"
+      - "What we'd do differently in future iterations"
+    technical:
+      - "Technical discovery or constraint"
+      - "Performance optimization found"
+    process:
+      - "Workflow improvement discovered"
+      - "Tool or method that worked well"
+      
+  # RISK REGISTRY - Known issues and mitigations
+  risks:
+    - risk: "Potential problem"
+      probability: "High/Medium/Low"
+      impact: "High/Medium/Low"
+      mitigation: "How to handle it"
+      
+  # PATTERNS IDENTIFIED - Reusable solutions found
+  patterns_discovered:
+    - pattern: "Solution pattern name"
+      problem: "What it solves"
+      application: "When to use it"
+      
+  # SESSION BOOTSTRAP - For new AI sessions
+  for_new_session: |
+    1. Check parent PHASE status and coordination needs
+    2. Check current status in project.status
+    3. Review decisions section for context
+    4. Check EXECUTIONs/tides/ for existing attempts
+    5. If no TIDE exists, create TIDE_1 from this PATH
+    6. If TIDE exists, check outcome and continue/adapt
+    7. Read specific WORK files as you execute them
+    8. Update learnings after each TIDE
+    9. Report PATH completion back to PHASE
+    
+  # REFERENCES - Methodology and tools
+  references:
+    methodology: "Docs/EPIC-TIDE-ADV/EPIC_TIDE_METHODOLOGY_v5_1_CORRECTED.md"
+    vocabulary: "Docs/EPIC-TIDE-ADV/EPIC_TIDE_VOCABULARY.yml"
+    templates: "Docs/EPIC-TIDE-ADV/TEMPLATES/"
+    parent_phase: "Reference to containing PHASE document"
+    
+  # CURRENT FOCUS - What to work on now
+  current_focus:
+    active_tide: "TIDE_1 or TIDE_2, etc."
+    blocking_issue: "Any current blocker"
+    next_work: "Next WORK to execute"

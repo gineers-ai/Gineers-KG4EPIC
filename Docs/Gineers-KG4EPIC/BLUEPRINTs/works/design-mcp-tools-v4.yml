@@ -1,0 +1,447 @@
+# WORK: Design MCP Tool Specifications (v4 AI-Native)
+# Self-contained execution unit with embedded context
+
+WORK:
+  id: design-mcp-tools
+  what: "Design MCP tool specifications for EPIC-TIDE methodology integration"
+  
+  # CONTEXT - Environment and dependencies
+  context:
+    location: /Users/inseokseo/Gineers-Projects/Gineers-KG4EPIC
+    prerequisites: 
+      - "Understanding of EPIC-TIDE methodology v3"
+      - "Knowledge of MCP protocol specifications"
+      - "Database schema designed (from design-database-schema)"
+    outputs:
+      - "7 core MCP tools fully specified"
+      - "JSON schemas for all tool inputs/outputs"
+      - "Validation rules documented"
+      - "Integration patterns defined"
+    dependencies: ["design-database-schema", "design-api-contracts"]
+    
+  # KNOWLEDGE - Critical information
+  knowledge:
+    - "MCP tools must follow JSON-RPC 2.0 specification"
+    - "EPIC-TIDE v3 has 7 core operations: save-work, create-path, start-tide, update-execution, complete-tide, query-patterns, synthesize-learnings"
+    - "PostgreSQL+pgvector backend requires vector similarity operations"
+    - "E5-large-v2 embeddings are 1024 dimensions"
+    - "All operations must be idempotent and traceable"
+    - "Tools should validate YAML schema compliance"
+  
+  # EXECUTION
+  how:
+    - "Define save-work tool for WORK document storage"
+    - "Define create-path tool for PATH creation and validation"
+    - "Define start-tide tool for execution initialization"
+    - "Define update-execution tool for progress tracking"
+    - "Define complete-tide tool for finalization and learning capture"
+    - "Define query-patterns tool for semantic search"
+    - "Define synthesize-learnings tool for knowledge extraction"
+    - "Create JSON schemas with full validation"
+    - "Document error handling and recovery patterns"
+  
+  metrics:
+    - "All 7 core tools fully specified"
+    - "JSON schemas validate successfully"
+    - "Input/output types documented"
+    - "Error handling patterns defined"
+    - "Integration test scenarios outlined"
+  
+  # LEARNINGS - From development experience
+  learnings:
+    - source: "MCP Research"
+      learning: "MCP tools must be stateless - all state in database or parameters"
+    - source: "EPIC-TIDE Analysis"
+      learning: "Tools need to handle partial execution gracefully for AI interruption"
+    - source: "Vector DB Experience"
+      learning: "Semantic search requires both embedding and metadata filtering"
+  
+  # TROUBLESHOOTING - Known issues and fixes
+  troubleshooting:
+    - issue: "Tool validation fails on complex nested objects"
+      symptoms: "JSON schema validation errors on WORK documents"
+      solution: "Use additionalProperties: false carefully, allow for YAML flexibility"
+      prevention: "Test schemas against real WORK documents during design"
+    
+    - issue: "Vector search returns irrelevant results"
+      symptoms: "query-patterns tool returns low-relevance matches"
+      solution: "Combine embedding similarity with metadata filters"
+      prevention: "Include semantic meaning in tool descriptions"
+      
+    - issue: "Execution state inconsistency"
+      symptoms: "TIDE execution appears stuck or inconsistent"
+      solution: "Implement atomic operations with database transactions"
+      prevention: "Design tools to be idempotent with clear state transitions"
+  
+  # COMPLETE IMPLEMENTATION
+  artifacts:
+    tool_specifications: |
+      # MCP Tool Specifications for EPIC-TIDE v3
+      
+      tools:
+        save_work:
+          name: "epic_save_work"
+          description: "Save or update a WORK document with vector embeddings"
+          inputSchema:
+            type: "object"
+            properties:
+              work_id:
+                type: "string"
+                description: "Unique identifier for the work"
+              content:
+                type: "object"
+                description: "Complete WORK document structure"
+              force_update:
+                type: "boolean"
+                default: false
+                description: "Override existing work if it exists"
+            required: ["work_id", "content"]
+          outputSchema:
+            type: "object"
+            properties:
+              success:
+                type: "boolean"
+              work_id:
+                type: "string"
+              embedding_id:
+                type: "string"
+              version:
+                type: "integer"
+    
+        create_path:
+          name: "epic_create_path"
+          description: "Create and validate a PATH document"
+          inputSchema:
+            type: "object"
+            properties:
+              path_id:
+                type: "string"
+                description: "Unique identifier for the path"
+              name:
+                type: "string"
+                description: "Human-readable path name"
+              works:
+                type: "array"
+                items:
+                  type: "string"
+                description: "Array of work_ids in execution order"
+              goals:
+                type: "array"
+                items:
+                  type: "string"
+                description: "Path objectives"
+            required: ["path_id", "name", "works", "goals"]
+          outputSchema:
+            type: "object"
+            properties:
+              success:
+                type: "boolean"
+              path_id:
+                type: "string"
+              validation_errors:
+                type: "array"
+                items:
+                  type: "string"
+    
+        start_tide:
+          name: "epic_start_tide"
+          description: "Initialize TIDE execution for a PATH"
+          inputSchema:
+            type: "object"
+            properties:
+              path_id:
+                type: "string"
+                description: "PATH to execute"
+              tide_number:
+                type: "integer"
+                minimum: 1
+                description: "TIDE sequence number"
+              context:
+                type: "object"
+                description: "Execution context and environment"
+            required: ["path_id", "tide_number"]
+          outputSchema:
+            type: "object"
+            properties:
+              success:
+                type: "boolean"
+              execution_id:
+                type: "string"
+              next_work:
+                type: "string"
+              evidence_required:
+                type: "string"
+    
+        update_execution:
+          name: "epic_update_execution"
+          description: "Update TIDE execution progress"
+          inputSchema:
+            type: "object"
+            properties:
+              execution_id:
+                type: "string"
+                description: "Current execution identifier"
+              work_id:
+                type: "string"
+                description: "Currently executing work"
+              status:
+                type: "string"
+                enum: ["in_progress", "completed", "blocked", "failed"]
+              progress_data:
+                type: "object"
+                description: "Execution state and artifacts"
+              learnings:
+                type: "array"
+                items:
+                  type: "object"
+                  properties:
+                    source:
+                      type: "string"
+                    learning:
+                      type: "string"
+            required: ["execution_id", "work_id", "status"]
+          outputSchema:
+            type: "object"
+            properties:
+              success:
+                type: "boolean"
+              next_work:
+                type: "string"
+              completion_percentage:
+                type: "number"
+    
+        complete_tide:
+          name: "epic_complete_tide"
+          description: "Finalize TIDE and capture learnings"
+          inputSchema:
+            type: "object"
+            properties:
+              execution_id:
+                type: "string"
+                description: "Execution to complete"
+              outcome:
+                type: "string"
+                enum: ["success", "partial", "failed"]
+              final_artifacts:
+                type: "object"
+                description: "Generated artifacts and outputs"
+              learnings:
+                type: "array"
+                items:
+                  type: "object"
+                  properties:
+                    category:
+                      type: "string"
+                    insight:
+                      type: "string"
+                    impact:
+                      type: "string"
+                      enum: ["high", "medium", "low"]
+            required: ["execution_id", "outcome"]
+          outputSchema:
+            type: "object"
+            properties:
+              success:
+                type: "boolean"
+              tide_summary:
+                type: "object"
+              next_recommendations:
+                type: "array"
+                items:
+                  type: "string"
+    
+        query_patterns:
+          name: "epic_query_patterns"
+          description: "Semantic search for patterns and learnings"
+          inputSchema:
+            type: "object"
+            properties:
+              query:
+                type: "string"
+                description: "Natural language query"
+              filters:
+                type: "object"
+                properties:
+                  work_types:
+                    type: "array"
+                    items:
+                      type: "string"
+                  time_range:
+                    type: "object"
+                    properties:
+                      start:
+                        type: "string"
+                        format: "date-time"
+                      end:
+                        type: "string"
+                        format: "date-time"
+                  min_relevance:
+                    type: "number"
+                    minimum: 0
+                    maximum: 1
+                    default: 0.7
+              limit:
+                type: "integer"
+                minimum: 1
+                maximum: 100
+                default: 10
+            required: ["query"]
+          outputSchema:
+            type: "object"
+            properties:
+              results:
+                type: "array"
+                items:
+                  type: "object"
+                  properties:
+                    work_id:
+                      type: "string"
+                    relevance_score:
+                      type: "number"
+                    matched_content:
+                      type: "string"
+                    context:
+                      type: "object"
+              total_count:
+                type: "integer"
+    
+        synthesize_learnings:
+          name: "epic_synthesize_learnings"
+          description: "Extract and synthesize knowledge from executions"
+          inputSchema:
+            type: "object"
+            properties:
+              scope:
+                type: "string"
+                enum: ["work", "path", "global"]
+                description: "Synthesis scope"
+              target_id:
+                type: "string"
+                description: "Specific work/path ID for focused synthesis"
+              time_window:
+                type: "object"
+                properties:
+                  days:
+                    type: "integer"
+                    description: "Look back N days"
+                  since:
+                    type: "string"
+                    format: "date-time"
+            required: ["scope"]
+          outputSchema:
+            type: "object"
+            properties:
+              patterns:
+                type: "array"
+                items:
+                  type: "object"
+                  properties:
+                    pattern:
+                      type: "string"
+                    frequency:
+                      type: "integer"
+                    confidence:
+                      type: "number"
+              recommendations:
+                type: "array"
+                items:
+                  type: "string"
+              knowledge_graph:
+                type: "object"
+                description: "Structured knowledge relationships"
+    
+    error_handling: |
+      # Error Handling Patterns for MCP Tools
+      
+      # Standard Error Response Format
+      error_response:
+        type: "object"
+        properties:
+          error:
+            type: "object"
+            properties:
+              code:
+                type: "integer"
+                description: "Error code (-32000 to -32099 for application errors)"
+              message:
+                type: "string"
+                description: "Human readable error message"
+              data:
+                type: "object"
+                description: "Additional error context"
+      
+      # Common Error Codes
+      error_codes:
+        - code: -32001
+          name: "WORK_NOT_FOUND"
+          message: "Specified work document does not exist"
+        - code: -32002
+          name: "PATH_VALIDATION_ERROR"
+          message: "PATH document failed validation"
+        - code: -32003
+          name: "EXECUTION_STATE_ERROR"
+          message: "Invalid execution state transition"
+        - code: -32004
+          name: "EMBEDDING_GENERATION_ERROR"
+          message: "Failed to generate embeddings"
+        - code: -32005
+          name: "DATABASE_CONNECTION_ERROR"
+          message: "Database operation failed"
+    
+    integration_patterns: |
+      # MCP Integration Patterns
+      
+      # Tool Chaining Example
+      typical_workflow:
+        1. "save_work: Store new WORK documents"
+        2. "create_path: Validate and create execution PATH"
+        3. "start_tide: Initialize execution tracking"
+        4. "update_execution: Progress updates (multiple calls)"
+        5. "complete_tide: Finalize and capture learnings"
+        6. "query_patterns: Search for similar executions"
+        7. "synthesize_learnings: Extract knowledge patterns"
+      
+      # State Management
+      state_principles:
+        - "Tools are stateless - all state in database"
+        - "Each tool call is atomic and idempotent"
+        - "Progress tracking through explicit state updates"
+        - "Recovery through execution state inspection"
+      
+      # Performance Considerations
+      optimization_tips:
+        - "Batch similar operations when possible"
+        - "Use appropriate vector search limits"
+        - "Cache embeddings for repeated queries"
+        - "Monitor database connection pool usage"
+    
+    commands: |
+      # Validation Commands
+      
+      # Validate tool specifications
+      node -e "
+        const specs = require('./tool-specifications.json');
+        const Ajv = require('ajv');
+        const ajv = new Ajv();
+        
+        Object.keys(specs.tools).forEach(toolName => {
+          const tool = specs.tools[toolName];
+          const inputValid = ajv.validateSchema(tool.inputSchema);
+          const outputValid = ajv.validateSchema(tool.outputSchema);
+          console.log(\`\${toolName}: Input Schema \${inputValid ? 'VALID' : 'INVALID'}, Output Schema \${outputValid ? 'VALID' : 'INVALID'}\`);
+        });
+      "
+      
+      # Test tool schema against sample data
+      node -e "
+        const specs = require('./tool-specifications.json');
+        const sampleWork = require('./sample-work.json');
+        
+        // Test save_work tool
+        const Ajv = require('ajv');
+        const ajv = new Ajv();
+        const validate = ajv.compile(specs.tools.save_work.inputSchema);
+        const isValid = validate({ work_id: 'test-work', content: sampleWork });
+        console.log('Sample WORK validates:', isValid);
+        if (!isValid) console.log('Errors:', validate.errors);
+      "

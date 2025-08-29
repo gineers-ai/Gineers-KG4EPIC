@@ -1,0 +1,66 @@
+# TIDE_1: First attempt to execute kg4epic-mvp PATH under PHASE_1_free
+
+TIDE:
+  attempt: 1
+  path_ref: kg4epic-mvp
+  phase_ref: PHASE_1_free
+  started: "2025-01-28T10:00:00Z"
+  
+  # Project context for this TIDE
+  context:
+    project_root: /Users/inseokseo/Gineers-Projects/Gineers-KG4EPIC
+    goal: "Build minimal KG4EPIC API server with PostgreSQL + pgvector"
+    approach: "Using v5.1 methodology with shared WORKs pool"
+    architecture: "PASSIVE STORAGE ONLY - no pattern extraction"
+    
+  # Critical decisions made
+  decisions:
+    security: "POST-only endpoints"
+    database: "PostgreSQL with pgvector v5.1 schema"
+    embeddings: "E5-large-v2 (1024 dimensions)"
+    docker_stack: "gineers-kg4epic"
+  
+  # Execution tracking
+  execution:
+    setup-nodejs-project-v3-enriched:
+      status: complete
+      started: "2025-01-28T10:05:00Z"
+      completed: "2025-01-28T10:07:00Z"
+      notes: "Successfully installed all dependencies, created TypeScript config and directory structure"
+      
+    setup-docker-environment-v4:
+      status: complete
+      started: "2025-01-28T10:08:00Z"
+      completed: "2025-01-28T10:10:00Z"
+      notes: "PostgreSQL with pgvector running. API container will start after implementation"
+      
+    design-database-schema-v4:
+      status: partial
+      started: "2025-01-28T10:11:00Z"
+      completed: "2025-01-28T10:13:00Z"
+      notes: "Tables created but need v5.1 schema update (PHASES table, PATH_WORKS junction)"
+      
+    implement-post-api-v4:
+      status: complete
+      started: "2025-01-28T10:14:00Z"
+      completed: "2025-01-28T17:10:00Z"
+      notes: "API implemented and tested. Work endpoints functional with E5-large-v2 embeddings"
+  
+  # Will be updated as we progress
+  outcome: success
+  
+  # Learnings will be captured here
+  learnings: |
+    - v5.1 structure requires proper PHASE→PATH→TIDE hierarchy
+    - WORKs are shared resources in BLUEPRINTs/works/
+    - Database schema needs PHASES table and PATH_WORKS junction
+    - KG4EPIC must remain passive storage only
+    - dotenv.config() must be called BEFORE importing database module
+    - pgvector requires array format [n,n,n] not JSON for vectors
+    - E5-large-v2 model loads on first use (takes ~30s)
+    - Docker password must match between .env and docker-compose
+    
+  # Issues encountered and resolutions
+  troubleshooting: |
+    - Initial TIDE was in wrong location (tides/ instead of phases/PHASE_1_free/paths/kg4epic-mvp/TIDE_1/)
+    - Database schema needs v5.1 update for PHASES and junction tables

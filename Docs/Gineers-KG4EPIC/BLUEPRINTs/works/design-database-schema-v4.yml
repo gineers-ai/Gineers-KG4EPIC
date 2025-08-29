@@ -1,0 +1,317 @@
+# WORK: Design Database Schema (v5 AI-Native)
+# Self-contained with PostgreSQL+pgvector schema design and phase alignment
+
+WORK:
+  id: design-database-schema
+  what: "Design PostgreSQL schema with pgvector for EPIC-TIDE knowledge system"
+  version: 5.1
+  
+  # PHASE CONTEXT - How this WORK contributes to PHASE_1_free
+  phase_context:
+    phase_id: "phase_1_free"
+    contribution: "Defines the core data architecture for capturing, storing, and semantically searching EPIC-TIDE methodology artifacts (WORKs, PATHs, TIDEs, PATTERNs) with E5-large-v2 embeddings"
+    phase_objectives_supported:
+      - "Enable systematic knowledge capture and reuse from AI development sessions"
+      - "Semantic search helps find relevant past learnings" 
+      - "pgvector semantic search returns relevant results"
+    shared_dependencies:
+      - "PostgreSQL with pgvector (from setup-docker-environment WORK)"
+      - "E5-large-v2 embedding service (1024-dimensional vectors)"
+      - "API endpoints for data operations (from implement-post-api WORK)"
+    success_alignment:
+      technical: "Enables pgvector semantic search success criteria and consistent E5-large-v2 embeddings"
+      business: "Provides data foundation for capturing WORKs, PATHs, and TIDEs from development sessions"
+      operational: "Creates extensible schema supporting documentation and team member contributions"
+    phase_risks_addressed:
+      - "E5-large-v2 performance bottlenecks: Optimized vector indexes with ivfflat for efficient similarity search"
+      - "Data consistency: Server-generated IDs, referential integrity, and structured JSONB fields"
+      - "Future extensibility: JSONB columns allow schema evolution without migrations"
+  
+  # CONTEXT - Task environment
+  context:
+    location: Database design phase
+    prerequisites:
+      - "PostgreSQL with pgvector extension available"
+      - "Understanding of EPIC-TIDE data model (WORK, PATH, TIDE, PATTERN)"
+    outputs:
+      - "Complete SQL schema ready for execution"
+      - "Vector search capability for semantic queries"
+      - "Optimized indexes for performance"
+    dependencies: ["setup-docker-environment"]
+    
+  # KNOWLEDGE - Critical database design information
+  knowledge:
+    - "E5-large-v2 embeddings are 1024 dimensions - all vectors must be vector(1024)"
+    - "IDs generated server-side using epoch timestamp + random for uniqueness"
+    - "JSONB for flexible schema evolution without migrations"
+    - "ivfflat index method best for approximate nearest neighbor search"
+    - "Foreign key from tides.path_id ensures referential integrity"
+    - "UNIQUE(path_id, attempt) prevents duplicate TIDE attempts"
+    - "PHASES table organizes development into logical groups with scope and architecture"
+    - "PATH_WORKS junction table provides many-to-many relationship between paths and works"
+    - "v4 template fields added to all tables for enhanced metadata and learning capture"
+  
+  # EXECUTION
+  how:
+    - "Create phases table to organize development phases"
+    - "Create works table with v4 template fields and vector columns for semantic search"
+    - "Create paths table with phase_id reference and v4 template fields"
+    - "Create path_works junction table for many-to-many relationship"
+    - "Create tides table for execution tracking with learnings vector"
+    - "Create patterns table for distilled knowledge"
+    - "Add ivfflat indexes for vector similarity search"
+    - "Add constraints and foreign keys"
+  
+  metrics:
+    - "All tables created without errors"
+    - "Vector similarity search works"
+    - "Query performance <500ms for 10k records"
+    - "Referential integrity maintained"
+  
+  # LEARNINGS - From implementation experience
+  learnings:
+    - source: "Initial design"
+      learning: "Must create vector extension before using vector type"
+    - source: "Performance testing"
+      learning: "ivfflat with lists=100 optimal for our data size"
+    - source: "API integration"
+      learning: "Server-generated IDs better than client-generated UUIDs"
+    - source: "Production"
+      learning: "Vector indexes can be large - plan storage accordingly"
+  
+  # TROUBLESHOOTING - Common schema issues
+  troubleshooting:
+    - issue: "ERROR: type 'vector' does not exist"
+      symptoms: "Can't create tables with vector columns"
+      solution: "Run 'CREATE EXTENSION vector;' first"
+      prevention: "Always enable extension in init.sql"
+    
+    - issue: "Vector dimension mismatch"
+      symptoms: "ERROR: different vector dimensions 1024 and 768"
+      solution: "Ensure all vectors use same dimension (1024 for E5-large-v2)"
+      prevention: "Define dimension as constant in application"
+    
+    - issue: "Slow similarity search"
+      symptoms: "Queries taking >1 second"
+      solution: "Create ivfflat index on vector columns"
+      prevention: "Add indexes immediately after table creation"
+    
+    - issue: "Foreign key violation"
+      symptoms: "Cannot delete PATH with existing TIDEs"
+      solution: "Delete TIDEs first or use CASCADE"
+      prevention: "Consider soft deletes instead"
+  
+  # COMPLETE IMPLEMENTATION
+  artifacts:
+    schema_sql: |
+      -- Enable pgvector extension
+      CREATE EXTENSION IF NOT EXISTS vector;
+      
+      -- PHASES table - organizes development into logical phases
+      CREATE TABLE phases (
+        phase_id VARCHAR PRIMARY KEY,
+        what TEXT NOT NULL,
+        scope TEXT NOT NULL,
+        architecture TEXT NOT NULL,
+        evolution_from VARCHAR,
+        
+        -- v4 template fields
+        project JSONB,
+        decisions JSONB,
+        learnings JSONB,
+        for_new_session JSONB,
+        
+        -- System fields
+        created_at TIMESTAMP DEFAULT NOW(),
+        updated_at TIMESTAMP DEFAULT NOW(),
+        
+        FOREIGN KEY (evolution_from) REFERENCES phases(phase_id)
+      );
+      
+      -- WORKS table with v4 template fields and semantic vectors
+      CREATE TABLE works (
+        work_id VARCHAR PRIMARY KEY DEFAULT 'work_' || extract(epoch from now())::text || '_' || substr(md5(random()::text), 1, 4),
+        what TEXT NOT NULL,
+        how JSONB NOT NULL,
+        metrics JSONB NOT NULL,
+        
+        -- v4 template fields
+        context JSONB NOT NULL,
+        knowledge JSONB NOT NULL,
+        learnings JSONB NOT NULL,
+        troubleshooting JSONB NOT NULL,
+        artifacts JSONB NOT NULL,
+        
+        -- Vectors for semantic search (E5-large-v2 = 1024 dims)
+        what_vector vector(1024),
+        how_vector vector(1024),
+        
+        -- System fields
+        created_at TIMESTAMP DEFAULT NOW(),
+        updated_at TIMESTAMP DEFAULT NOW()
+      );
+      
+      -- PATHS table with phase reference and v4 template fields
+      CREATE TABLE paths (
+        path_id VARCHAR PRIMARY KEY DEFAULT 'path_' || extract(epoch from now())::text || '_' || substr(md5(random()::text), 1, 4),
+        phase_id VARCHAR NOT NULL REFERENCES phases(phase_id),
+        what TEXT NOT NULL,
+        metrics JSONB NOT NULL,
+        
+        -- v4 template fields
+        project JSONB,
+        decisions JSONB,
+        learnings JSONB,
+        for_new_session JSONB,
+        
+        -- Vector for semantic search
+        what_vector vector(1024),
+        
+        -- Metadata
+        proven BOOLEAN DEFAULT FALSE,
+        version VARCHAR DEFAULT '1.0',
+        created_at TIMESTAMP DEFAULT NOW()
+      );
+      
+      -- PATH_WORKS junction table - many-to-many relationship
+      CREATE TABLE path_works (
+        path_id VARCHAR NOT NULL REFERENCES paths(path_id) ON DELETE CASCADE,
+        work_id VARCHAR NOT NULL REFERENCES works(work_id) ON DELETE CASCADE,
+        sequence_order INTEGER NOT NULL,
+        
+        PRIMARY KEY (path_id, work_id)
+      );
+      
+      -- TIDES table (execution tracking)
+      CREATE TABLE tides (
+        tide_id VARCHAR PRIMARY KEY DEFAULT 'tide_' || extract(epoch from now())::text || '_' || substr(md5(random()::text), 1, 4),
+        path_id VARCHAR REFERENCES paths(path_id),
+        attempt INTEGER NOT NULL,
+        
+        -- Execution data
+        execution JSONB NOT NULL,  -- {work_name: status}
+        adaptations JSONB,          -- Changes from original
+        metrics_achieved JSONB,     -- {metric: boolean}
+        learnings TEXT,
+        outcome VARCHAR CHECK (outcome IN ('success', 'partial', 'failed')),
+        
+        -- Vector for searching similar learnings
+        learnings_vector vector(1024),
+        
+        -- Timestamps
+        started_at TIMESTAMP DEFAULT NOW(),
+        completed_at TIMESTAMP,
+        
+        UNIQUE(path_id, attempt)
+      );
+      
+      -- PATTERNS table
+      CREATE TABLE patterns (
+        pattern_id VARCHAR PRIMARY KEY DEFAULT 'pattern_' || extract(epoch from now())::text || '_' || substr(md5(random()::text), 1, 4),
+        distilled_from JSONB NOT NULL,  -- Array of tide_ids
+        common_sequence JSONB NOT NULL,
+        proven_adaptations JSONB,
+        typical_issues JSONB,
+        success_metrics JSONB,
+        
+        -- Vector for pattern similarity
+        pattern_vector vector(1024),
+        
+        created_at TIMESTAMP DEFAULT NOW()
+      );
+      
+      -- Vector similarity indexes
+      CREATE INDEX works_what_vector_idx ON works USING ivfflat (what_vector vector_cosine_ops) WITH (lists = 100);
+      CREATE INDEX works_how_vector_idx ON works USING ivfflat (how_vector vector_cosine_ops) WITH (lists = 100);
+      CREATE INDEX paths_what_vector_idx ON paths USING ivfflat (what_vector vector_cosine_ops) WITH (lists = 100);
+      CREATE INDEX tides_learnings_vector_idx ON tides USING ivfflat (learnings_vector vector_cosine_ops) WITH (lists = 100);
+      CREATE INDEX patterns_vector_idx ON patterns USING ivfflat (pattern_vector vector_cosine_ops) WITH (lists = 100);
+    
+    sample_queries: |
+      -- Semantic search for similar WORKs
+      SELECT work_id, what, 
+             1 - (what_vector <=> $1::vector) as similarity
+      FROM works
+      WHERE what_vector <=> $1::vector < 0.5
+      ORDER BY what_vector <=> $1::vector
+      LIMIT 10;
+      
+      -- Find similar learnings from past TIDEs
+      SELECT tide_id, learnings,
+             1 - (learnings_vector <=> $1::vector) as similarity
+      FROM tides
+      WHERE learnings_vector IS NOT NULL
+      ORDER BY learnings_vector <=> $1::vector
+      LIMIT 5;
+      
+      -- Get PATH with its WORKs in sequence order
+      SELECT p.path_id, p.what, w.work_id, w.what as work_what, pw.sequence_order
+      FROM paths p
+      JOIN path_works pw ON p.path_id = pw.path_id
+      JOIN works w ON pw.work_id = w.work_id
+      WHERE p.path_id = $1
+      ORDER BY pw.sequence_order;
+      
+      -- Get all PATHs in a PHASE
+      SELECT ph.phase_id, ph.what as phase_what, p.path_id, p.what as path_what
+      FROM phases ph
+      JOIN paths p ON ph.phase_id = p.phase_id
+      WHERE ph.phase_id = $1
+      ORDER BY p.created_at;
+      
+      -- Get latest TIDE for a PATH
+      SELECT * FROM tides 
+      WHERE path_id = $1
+      ORDER BY attempt DESC
+      LIMIT 1;
+      
+      -- Find patterns from successful TIDEs
+      SELECT p.* FROM patterns p
+      JOIN unnest(p.distilled_from) AS tide_id ON true
+      JOIN tides t ON t.tide_id = tide_id::text
+      WHERE t.outcome = 'success';
+    
+    migration_sql: |
+      -- Migration from v5.0 to v5.1
+      
+      -- 1. Create PHASES table
+      CREATE TABLE phases (
+        phase_id VARCHAR PRIMARY KEY,
+        what TEXT NOT NULL,
+        scope TEXT NOT NULL,
+        architecture TEXT NOT NULL,
+        evolution_from VARCHAR,
+        project JSONB,
+        decisions JSONB,
+        learnings JSONB,
+        for_new_session JSONB,
+        created_at TIMESTAMP DEFAULT NOW(),
+        updated_at TIMESTAMP DEFAULT NOW(),
+        FOREIGN KEY (evolution_from) REFERENCES phases(phase_id)
+      );
+      
+      -- 2. Add v4 template fields to existing WORKS table
+      ALTER TABLE works ADD COLUMN IF NOT EXISTS context JSONB NOT NULL DEFAULT '{}';
+      ALTER TABLE works ADD COLUMN IF NOT EXISTS knowledge JSONB NOT NULL DEFAULT '{}';
+      ALTER TABLE works ADD COLUMN IF NOT EXISTS learnings JSONB NOT NULL DEFAULT '{}';
+      ALTER TABLE works ADD COLUMN IF NOT EXISTS troubleshooting JSONB NOT NULL DEFAULT '{}';
+      ALTER TABLE works ADD COLUMN IF NOT EXISTS artifacts JSONB NOT NULL DEFAULT '{}';
+      
+      -- 3. Add phase_id and v4 fields to PATHS, remove works JSONB
+      ALTER TABLE paths ADD COLUMN phase_id VARCHAR REFERENCES phases(phase_id);
+      ALTER TABLE paths ADD COLUMN project JSONB;
+      ALTER TABLE paths ADD COLUMN decisions JSONB;
+      ALTER TABLE paths ADD COLUMN learnings JSONB;
+      ALTER TABLE paths ADD COLUMN for_new_session JSONB;
+      ALTER TABLE paths DROP COLUMN IF EXISTS works;  -- Remove works JSONB array
+      
+      -- 4. Create PATH_WORKS junction table
+      CREATE TABLE path_works (
+        path_id VARCHAR NOT NULL REFERENCES paths(path_id) ON DELETE CASCADE,
+        work_id VARCHAR NOT NULL REFERENCES works(work_id) ON DELETE CASCADE,
+        sequence_order INTEGER NOT NULL,
+        PRIMARY KEY (path_id, work_id)
+      );
+      
+      -- 5. Add additional vector index for works.how_vector
+      CREATE INDEX works_how_vector_idx ON works USING ivfflat (how_vector vector_cosine_ops) WITH (lists = 100);

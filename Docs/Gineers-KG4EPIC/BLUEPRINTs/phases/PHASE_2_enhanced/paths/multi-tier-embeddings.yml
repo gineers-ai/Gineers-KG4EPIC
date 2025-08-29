@@ -1,0 +1,116 @@
+# PATH: Multi-Tier Embeddings Implementation
+# Add ada-002 embedding tier for enhanced content understanding
+
+PATH:
+  id: multi-tier-embeddings
+  what: "Integrate OpenAI ada-002 embeddings alongside existing E5-large"
+  version: 1.0
+  phase_id: phase_2_enhanced
+  
+  # PROJECT CONTEXT
+  project:
+    root: /Users/inseokseo/Gineers-Projects/Gineers-KG4EPIC
+    type: "Enhancement of existing embedding system"
+    status: "Ready for execution after PHASE_1 completion"
+    
+  # CRITICAL DECISIONS
+  decisions:
+    embedding_strategy: |
+      - Keep E5-large-v2 for general purpose (FREE)
+      - Add ada-002 for content understanding (PAID)
+      - Store in separate vector columns
+      - Use weighted combination for search
+      
+    implementation: |
+      - Extend Python embeddings service
+      - Add OpenAI API client
+      - Cache embeddings to minimize costs
+      - Batch process when possible
+      
+    storage: |
+      - Add ada_embedding vector(1536) columns
+      - Keep existing E5 columns unchanged
+      - Migration script for new columns
+      - Backward compatible approach
+      
+  # EVIDENCE REQUIRED
+  evidence_required:
+    integration:
+      - "OpenAI API client working in Python service"
+      - "Ada-002 embeddings generated successfully"
+      - "New vector columns added to database"
+      
+    performance:
+      - "Comparison metrics: E5 vs ada-002 accuracy"
+      - "API cost tracking implemented"
+      - "Response time within acceptable range"
+      
+    functionality:
+      - "Dual-embedding search operational"
+      - "Weighted combination algorithm working"
+      - "Backward compatibility maintained"
+      
+  # EXECUTION SEQUENCE
+  works:  # New WORKs for PHASE_2
+    - ../../../works/extend-database-for-ada.yml
+    - ../../../works/integrate-openai-embeddings.yml
+    - ../../../works/implement-hybrid-search.yml
+    - ../../../works/create-embedding-tests.yml
+    
+  # SUCCESS METRICS
+  metrics:
+    technical:
+      - "Ada-002 embeddings stored for all entities"
+      - "Hybrid search returns better results"
+      - "API costs < $0.10 per 1000 operations"
+      
+    quality:
+      - "Search precision improved by 20%+"
+      - "False positive rate reduced by 30%+"
+      - "Content-type differentiation working"
+      
+    operational:
+      - "No performance degradation"
+      - "Existing APIs still functional"
+      - "Monitoring dashboard for costs"
+      
+  # RISK MITIGATION
+  risks:
+    api_costs:
+      risk: "OpenAI costs exceed budget"
+      mitigation: "Implement aggressive caching"
+      monitoring: "Daily cost alerts"
+      
+    compatibility:
+      risk: "Breaking existing functionality"
+      mitigation: "Feature flags for new embeddings"
+      fallback: "E5-only mode available"
+      
+  # LEARNINGS FROM PHASE_1
+  applied_learnings:
+    - "Use Python service for embeddings (proven reliable)"
+    - "Create tests in parallel with features"
+    - "Document evidence for all claims"
+    - "Health checks for all services"
+    
+  # COORDINATION
+  coordination:
+    with_phase_1: "Builds on existing infrastructure"
+    parallel_work: "Testing debt can be addressed simultaneously"
+    dependencies: "Requires PHASE_1 operational"
+    
+  # SESSION GUIDANCE
+  for_new_session: |
+    1. Verify PHASE_1 embeddings still working
+    2. Check OpenAI API key is configured
+    3. Review cost implications with stakeholder
+    4. Start with database schema extension
+    5. Test ada-002 integration in isolation
+    6. Compare performance metrics
+    7. Document all evidence
+    
+  # NEXT STEPS
+  after_success:
+    immediate: "Start pattern-extraction PATH"
+    validation: "Run comparison benchmarks"
+    documentation: "Update API docs with new endpoints"

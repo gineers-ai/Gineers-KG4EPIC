@@ -1,0 +1,775 @@
+# WORK: Setup Embedding Service (v4 AI-Native)
+# Self-contained execution unit with embedded context
+
+WORK:
+  id: setup-embedding-service
+  what: "Setup E5-large-v2 embedding generation service with caching and batch processing"
+  
+  # CONTEXT - Environment and dependencies
+  context:
+    location: /Users/inseokseo/Gineers-Projects/Gineers-KG4EPIC
+    prerequisites: 
+      - "Python 3.8+ environment with GPU support (optional but recommended)"
+      - "Node.js project setup for API integration"
+      - "PostgreSQL database running for embedding cache"
+      - "Sufficient disk space (5GB+ for model weights)"
+    outputs:
+      - "E5-large-v2 model loaded and ready"
+      - "REST API for embedding generation"
+      - "Batch processing capabilities"
+      - "Redis/Database caching for performance"
+      - "Node.js client library for integration"
+    dependencies: ["setup-nodejs-project", "setup-postgres-pgvector"]
+    
+  # KNOWLEDGE - Critical information
+  knowledge:
+    - "E5-large-v2 generates 1024-dimensional embeddings optimized for semantic similarity"
+    - "Model requires ~5GB storage and 8GB+ RAM for inference"
+    - "GPU acceleration (CUDA) reduces embedding time from 2-3s to 200-300ms per text"
+    - "Batch processing improves throughput by 3-5x compared to individual requests"
+    - "Text normalization and truncation essential for consistent embeddings"
+    - "Caching embeddings for identical text saves 90%+ computation time"
+    - "E5 models require 'query: ' or 'passage: ' prefixes for optimal performance"
+  
+  # EXECUTION
+  how:
+    - "Setup Python environment with sentence-transformers and torch"
+    - "Download and load E5-large-v2 model with GPU support"
+    - "Create Flask/FastAPI service for embedding generation"
+    - "Implement batch processing endpoint for multiple texts"
+    - "Add text preprocessing (normalization, truncation)"
+    - "Integrate caching layer (Redis or PostgreSQL)"
+    - "Create Node.js client library for API integration"
+    - "Add health checks and monitoring"
+    - "Setup Docker container for easy deployment"
+  
+  metrics:
+    - "E5-large-v2 model loads successfully within 30 seconds"
+    - "Single text embedding generated in <2 seconds (CPU) or <300ms (GPU)"
+    - "Batch processing handles 10+ texts efficiently"
+    - "Embeddings are exactly 1024 dimensions with proper normalization"
+    - "Cache hit rate >80% for repeated text"
+    - "API responds within SLA for 95% of requests"
+  
+  # LEARNINGS - From development experience
+  learnings:
+    - source: "Model Research"
+      learning: "E5-large-v2 requires specific text prefixes ('query:' for questions, 'passage:' for documents) for optimal similarity performance"
+    - source: "Performance Testing"
+      learning: "GPU acceleration provides 10x speedup, but CPU-only deployment still viable for moderate loads"
+    - source: "Production Experience"
+      learning: "Text normalization and consistent truncation prevent embedding drift over time"
+  
+  # TROUBLESHOOTING - Known issues and fixes
+  troubleshooting:
+    - issue: "Model download fails or times out"
+      symptoms: "ConnectionError or incomplete model files"
+      solution: "Use Hugging Face offline mode or download manually, check disk space"
+      prevention: "Pre-download model during Docker build, use model mirrors"
+    
+    - issue: "Out of memory errors during inference"
+      symptoms: "CUDA out of memory or Python process killed"
+      solution: "Reduce batch size, use CPU fallback, or add more GPU memory"
+      prevention: "Monitor memory usage and implement dynamic batch sizing"
+      
+    - issue: "Inconsistent embedding dimensions"
+      symptoms: "Vector dimension mismatch errors in database"
+      solution: "Ensure model loaded correctly, check for text preprocessing issues"
+      prevention: "Add embedding dimension validation in API response"
+    
+    - issue: "Slow embedding generation on CPU"
+      symptoms: "API requests timeout, >5 seconds per embedding"
+      solution: "Enable GPU acceleration, optimize batch sizes, use model quantization"
+      prevention: "Load test with expected traffic patterns, consider model scaling"
+  
+  # COMPLETE IMPLEMENTATION
+  artifacts:
+    embedding_service: |
+      # embedding-service/app.py
+      from flask import Flask, request, jsonify
+      import torch
+      from sentence_transformers import SentenceTransformer
+      import numpy as np
+      import redis
+      import hashlib
+      import json
+      import logging
+      import time
+      from typing import List, Dict, Any, Optional
+      
+      # Setup logging
+      logging.basicConfig(level=logging.INFO)
+      logger = logging.getLogger(__name__)
+      
+      app = Flask(__name__)
+      
+      class EmbeddingService:
+          def __init__(self):
+              self.model = None
+              self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
+              self.cache = redis.Redis(
+                  host='localhost', 
+                  port=6379, 
+                  db=0, 
+                  decode_responses=False
+              ) if self._redis_available() else None
+              
+              logger.info(f"Initializing embedding service on device: {self.device}")
+              self.load_model()
+          
+          def _redis_available(self) -> bool:
+              try:
+                  r = redis.Redis(host='localhost', port=6379, db=0)
+                  r.ping()
+                  return True
+              except:
+                  logger.warning("Redis not available, caching disabled")
+                  return False
+          
+          def load_model(self):
+              """Load E5-large-v2 model with optimization"""
+              try:
+                  logger.info("Loading E5-large-v2 model...")
+                  self.model = SentenceTransformer('intfloat/e5-large-v2', device=self.device)
+                  
+                  # Optimize model for inference
+                  if self.device == 'cuda':
+                      self.model.half()  # Use half precision for GPU
+                  
+                  logger.info(f"Model loaded successfully on {self.device}")
+                  
+                  # Warmup with dummy text
+                  self._warmup()
+                  
+              except Exception as e:
+                  logger.error(f"Failed to load model: {e}")
+                  raise
+          
+          def _warmup(self):
+              """Warmup model with dummy inference"""
+              dummy_text = "passage: This is a warmup text for the embedding model"
+              _ = self.model.encode([dummy_text])
+              logger.info("Model warmup completed")
+          
+          def _get_cache_key(self, text: str) -> str:
+              """Generate cache key for text"""
+              return f"emb:e5:{hashlib.sha256(text.encode()).hexdigest()[:16]}"
+          
+          def _get_cached_embedding(self, text: str) -> Optional[np.ndarray]:
+              """Get cached embedding if available"""
+              if not self.cache:
+                  return None
+                  
+              try:
+                  key = self._get_cache_key(text)
+                  cached = self.cache.get(key)
+                  if cached:
+                      return np.frombuffer(cached, dtype=np.float32)
+              except Exception as e:
+                  logger.warning(f"Cache read error: {e}")
+              
+              return None
+          
+          def _cache_embedding(self, text: str, embedding: np.ndarray, ttl: int = 86400):
+              """Cache embedding with TTL"""
+              if not self.cache:
+                  return
+                  
+              try:
+                  key = self._get_cache_key(text)
+                  self.cache.setex(key, ttl, embedding.tobytes())
+              except Exception as e:
+                  logger.warning(f"Cache write error: {e}")
+          
+          def preprocess_text(self, text: str, prefix: str = "passage") -> str:
+              """Preprocess text for E5 model"""
+              # Clean and normalize text
+              text = text.strip()
+              if not text:
+                  return f"{prefix}: "
+              
+              # Truncate to max length (E5 supports up to 512 tokens)
+              # Roughly 400 characters = ~100 tokens for safety
+              max_chars = 2000
+              if len(text) > max_chars:
+                  text = text[:max_chars] + "..."
+              
+              # Add E5 prefix
+              return f"{prefix}: {text}"
+          
+          def generate_embedding(self, text: str, prefix: str = "passage") -> np.ndarray:
+              """Generate single embedding with caching"""
+              processed_text = self.preprocess_text(text, prefix)
+              
+              # Check cache first
+              cached = self._get_cached_embedding(processed_text)
+              if cached is not None:
+                  return cached
+              
+              # Generate embedding
+              start_time = time.time()
+              embedding = self.model.encode([processed_text], normalize_embeddings=True)[0]
+              inference_time = time.time() - start_time
+              
+              logger.info(f"Generated embedding in {inference_time:.3f}s (cached=False)")
+              
+              # Cache for future use
+              self._cache_embedding(processed_text, embedding)
+              
+              return embedding
+          
+          def generate_batch_embeddings(
+              self, 
+              texts: List[str], 
+              prefix: str = "passage",
+              batch_size: int = 32
+          ) -> List[np.ndarray]:
+              """Generate embeddings for multiple texts efficiently"""
+              
+              if not texts:
+                  return []
+              
+              processed_texts = [self.preprocess_text(text, prefix) for text in texts]
+              embeddings = []
+              cache_hits = 0
+              
+              # Check cache for all texts
+              uncached_indices = []
+              uncached_texts = []
+              
+              for i, text in enumerate(processed_texts):
+                  cached = self._get_cached_embedding(text)
+                  if cached is not None:
+                      embeddings.append((i, cached))
+                      cache_hits += 1
+                  else:
+                      uncached_indices.append(i)
+                      uncached_texts.append(text)
+              
+              # Generate embeddings for uncached texts in batches
+              if uncached_texts:
+                  start_time = time.time()
+                  
+                  new_embeddings = []
+                  for i in range(0, len(uncached_texts), batch_size):
+                      batch = uncached_texts[i:i + batch_size]
+                      batch_embeddings = self.model.encode(
+                          batch, 
+                          normalize_embeddings=True,
+                          batch_size=len(batch)
+                      )
+                      new_embeddings.extend(batch_embeddings)
+                  
+                  inference_time = time.time() - start_time
+                  
+                  # Add to results and cache
+                  for i, embedding in enumerate(new_embeddings):
+                      original_idx = uncached_indices[i]
+                      embeddings.append((original_idx, embedding))
+                      
+                      # Cache new embedding
+                      self._cache_embedding(uncached_texts[i], embedding)
+                  
+                  logger.info(
+                      f"Generated {len(new_embeddings)} embeddings in {inference_time:.3f}s, "
+                      f"cache hits: {cache_hits}/{len(texts)}"
+                  )
+              else:
+                  logger.info(f"All {len(texts)} embeddings served from cache")
+              
+              # Sort by original order and return
+              embeddings.sort(key=lambda x: x[0])
+              return [emb for _, emb in embeddings]
+      
+      # Initialize service
+      embedding_service = EmbeddingService()
+      
+      @app.route('/health', methods=['GET'])
+      def health_check():
+          """Health check endpoint"""
+          return jsonify({
+              'status': 'healthy',
+              'model_loaded': embedding_service.model is not None,
+              'device': embedding_service.device,
+              'cache_available': embedding_service.cache is not None,
+              'timestamp': time.time()
+          })
+      
+      @app.route('/embed', methods=['POST'])
+      def generate_embedding():
+          """Generate embedding for single text"""
+          try:
+              data = request.get_json()
+              
+              if not data or 'text' not in data:
+                  return jsonify({'error': 'Missing text field'}), 400
+              
+              text = data['text']
+              prefix = data.get('prefix', 'passage')
+              
+              if not isinstance(text, str) or not text.strip():
+                  return jsonify({'error': 'Text must be non-empty string'}), 400
+              
+              embedding = embedding_service.generate_embedding(text, prefix)
+              
+              return jsonify({
+                  'embedding': embedding.tolist(),
+                  'dimensions': len(embedding),
+                  'model': 'intfloat/e5-large-v2'
+              })
+              
+          except Exception as e:
+              logger.error(f"Embedding generation failed: {e}")
+              return jsonify({'error': str(e)}), 500
+      
+      @app.route('/embed/batch', methods=['POST'])
+      def generate_batch_embeddings():
+          """Generate embeddings for multiple texts"""
+          try:
+              data = request.get_json()
+              
+              if not data or 'texts' not in data:
+                  return jsonify({'error': 'Missing texts field'}), 400
+              
+              texts = data['texts']
+              prefix = data.get('prefix', 'passage')
+              
+              if not isinstance(texts, list) or len(texts) == 0:
+                  return jsonify({'error': 'Texts must be non-empty array'}), 400
+              
+              if len(texts) > 100:
+                  return jsonify({'error': 'Maximum 100 texts per batch'}), 400
+              
+              embeddings = embedding_service.generate_batch_embeddings(texts, prefix)
+              
+              return jsonify({
+                  'embeddings': [emb.tolist() for emb in embeddings],
+                  'count': len(embeddings),
+                  'dimensions': len(embeddings[0]) if embeddings else 0,
+                  'model': 'intfloat/e5-large-v2'
+              })
+              
+          except Exception as e:
+              logger.error(f"Batch embedding generation failed: {e}")
+              return jsonify({'error': str(e)}), 500
+      
+      if __name__ == '__main__':
+          app.run(host='0.0.0.0', port=5000, threaded=True)
+    
+    nodejs_client: |
+      // src/services/embedding-client.ts
+      import axios, { AxiosInstance } from 'axios';
+      import { Logger } from '../utils/logger.js';
+      
+      const logger = Logger.getInstance();
+      
+      export interface EmbeddingResponse {
+        embedding: number[];
+        dimensions: number;
+        model: string;
+      }
+      
+      export interface BatchEmbeddingResponse {
+        embeddings: number[][];
+        count: number;
+        dimensions: number;
+        model: string;
+      }
+      
+      export class EmbeddingClient {
+        private client: AxiosInstance;
+        private baseURL: string;
+        
+        constructor(baseURL: string = 'http://localhost:5000') {
+          this.baseURL = baseURL;
+          this.client = axios.create({
+            baseURL,
+            timeout: 30000, // 30 second timeout
+            headers: {
+              'Content-Type': 'application/json'
+            }
+          });
+        }
+        
+        async healthCheck(): Promise<{
+          status: string;
+          model_loaded: boolean;
+          device: string;
+          cache_available: boolean;
+        }> {
+          try {
+            const response = await this.client.get('/health');
+            return response.data;
+          } catch (error) {
+            logger.error('Embedding service health check failed', { 
+              error: error.message,
+              baseURL: this.baseURL 
+            });
+            throw new Error(`Embedding service unavailable: ${error.message}`);
+          }
+        }
+        
+        async generateEmbedding(
+          text: string, 
+          prefix: 'query' | 'passage' = 'passage'
+        ): Promise<number[]> {
+          try {
+            if (!text || !text.trim()) {
+              throw new Error('Text cannot be empty');
+            }
+            
+            logger.debug('Generating embedding', { 
+              textLength: text.length, 
+              prefix 
+            });
+            
+            const response = await this.client.post<EmbeddingResponse>('/embed', {
+              text: text.trim(),
+              prefix
+            });
+            
+            const { embedding, dimensions } = response.data;
+            
+            if (dimensions !== 1024) {
+              throw new Error(`Expected 1024 dimensions, got ${dimensions}`);
+            }
+            
+            logger.debug('Embedding generated successfully', { 
+              dimensions,
+              model: response.data.model 
+            });
+            
+            return embedding;
+            
+          } catch (error) {
+            if (axios.isAxiosError(error)) {
+              const message = error.response?.data?.error || error.message;
+              logger.error('Embedding generation failed', { 
+                error: message,
+                status: error.response?.status,
+                text: text.substring(0, 100) + '...'
+              });
+              throw new Error(`Embedding generation failed: ${message}`);
+            }
+            
+            logger.error('Unexpected error in embedding generation', error);
+            throw error;
+          }
+        }
+        
+        async generateBatchEmbeddings(
+          texts: string[], 
+          prefix: 'query' | 'passage' = 'passage'
+        ): Promise<number[][]> {
+          try {
+            if (!texts || texts.length === 0) {
+              return [];
+            }
+            
+            if (texts.length > 100) {
+              throw new Error('Maximum 100 texts per batch');
+            }
+            
+            // Filter out empty texts
+            const validTexts = texts.filter(text => text && text.trim());
+            if (validTexts.length === 0) {
+              throw new Error('No valid texts provided');
+            }
+            
+            logger.debug('Generating batch embeddings', { 
+              count: validTexts.length, 
+              prefix 
+            });
+            
+            const response = await this.client.post<BatchEmbeddingResponse>('/embed/batch', {
+              texts: validTexts,
+              prefix
+            });
+            
+            const { embeddings, count, dimensions } = response.data;
+            
+            if (count !== validTexts.length) {
+              throw new Error(`Expected ${validTexts.length} embeddings, got ${count}`);
+            }
+            
+            if (dimensions !== 1024) {
+              throw new Error(`Expected 1024 dimensions, got ${dimensions}`);
+            }
+            
+            logger.debug('Batch embeddings generated successfully', { 
+              count,
+              dimensions,
+              model: response.data.model 
+            });
+            
+            return embeddings;
+            
+          } catch (error) {
+            if (axios.isAxiosError(error)) {
+              const message = error.response?.data?.error || error.message;
+              logger.error('Batch embedding generation failed', { 
+                error: message,
+                status: error.response?.status,
+                count: texts.length
+              });
+              throw new Error(`Batch embedding generation failed: ${message}`);
+            }
+            
+            logger.error('Unexpected error in batch embedding generation', error);
+            throw error;
+          }
+        }
+        
+        async generateWorkEmbedding(workContent: any): Promise<number[]> {
+          // Extract meaningful text from WORK document
+          const textParts: string[] = [];
+          
+          if (workContent.what) {
+            textParts.push(workContent.what);
+          }
+          
+          if (workContent.how && Array.isArray(workContent.how)) {
+            textParts.push(...workContent.how);
+          }
+          
+          if (workContent.knowledge && Array.isArray(workContent.knowledge)) {
+            textParts.push(...workContent.knowledge);
+          }
+          
+          if (workContent.learnings && Array.isArray(workContent.learnings)) {
+            workContent.learnings.forEach((learning: any) => {
+              if (learning.learning) {
+                textParts.push(learning.learning);
+              }
+            });
+          }
+          
+          const combinedText = textParts.join(' ').trim();
+          
+          if (!combinedText) {
+            throw new Error('WORK document contains no extractable text');
+          }
+          
+          return this.generateEmbedding(combinedText, 'passage');
+        }
+      }
+    
+    requirements_txt: |
+      # requirements.txt for Python embedding service
+      torch>=2.0.0
+      sentence-transformers>=2.2.2
+      transformers>=4.21.0
+      flask>=2.3.0
+      redis>=4.5.0
+      numpy>=1.21.0
+      scikit-learn>=1.0.0
+      requests>=2.28.0
+      gunicorn>=20.1.0
+      psutil>=5.9.0
+    
+    dockerfile: |
+      # Dockerfile for embedding service
+      FROM python:3.10-slim
+      
+      # Install system dependencies
+      RUN apt-get update && apt-get install -y \
+          gcc \
+          g++ \
+          && rm -rf /var/lib/apt/lists/*
+      
+      WORKDIR /app
+      
+      # Copy requirements and install Python dependencies
+      COPY requirements.txt .
+      RUN pip install --no-cache-dir -r requirements.txt
+      
+      # Pre-download the model to speed up container startup
+      RUN python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('intfloat/e5-large-v2')"
+      
+      # Copy application code
+      COPY app.py .
+      
+      # Expose port
+      EXPOSE 5000
+      
+      # Health check
+      HEALTHCHECK --interval=30s --timeout=30s --start-period=60s --retries=3 \
+        CMD curl -f http://localhost:5000/health || exit 1
+      
+      # Run with gunicorn for production
+      CMD ["gunicorn", "--bind", "0.0.0.0:5000", "--workers", "2", "--timeout", "60", "app:app"]
+    
+    docker_compose: |
+      # docker-compose.embedding.yml
+      version: '3.8'
+      
+      services:
+        redis:
+          image: redis:7-alpine
+          container_name: embedding-cache
+          ports:
+            - "6379:6379"
+          volumes:
+            - redis_data:/data
+          command: redis-server --appendonly yes
+        
+        embedding-service:
+          build:
+            context: ./embedding-service
+            dockerfile: Dockerfile
+          container_name: embedding-service
+          ports:
+            - "5000:5000"
+          environment:
+            - REDIS_HOST=redis
+            - REDIS_PORT=6379
+          depends_on:
+            - redis
+          volumes:
+            - model_cache:/root/.cache/torch
+          deploy:
+            resources:
+              limits:
+                memory: 8G
+              reservations:
+                memory: 4G
+      
+      volumes:
+        redis_data:
+        model_cache:
+    
+    integration_test: |
+      // tests/embedding.test.ts
+      import { EmbeddingClient } from '../src/services/embedding-client.js';
+      
+      describe('Embedding Service Integration', () => {
+        let client: EmbeddingClient;
+        
+        beforeAll(() => {
+          client = new EmbeddingClient('http://localhost:5000');
+        });
+        
+        test('service health check', async () => {
+          const health = await client.healthCheck();
+          
+          expect(health.status).toBe('healthy');
+          expect(health.model_loaded).toBe(true);
+          expect(health.dimensions).toBe(1024);
+        });
+        
+        test('generate single embedding', async () => {
+          const text = 'This is a test document for semantic search';
+          const embedding = await client.generateEmbedding(text, 'passage');
+          
+          expect(embedding).toHaveLength(1024);
+          expect(typeof embedding[0]).toBe('number');
+          
+          // Check normalization (L2 norm should be close to 1)
+          const norm = Math.sqrt(embedding.reduce((sum, val) => sum + val * val, 0));
+          expect(norm).toBeCloseTo(1.0, 2);
+        });
+        
+        test('generate batch embeddings', async () => {
+          const texts = [
+            'First test document',
+            'Second test document', 
+            'Third test document'
+          ];
+          
+          const embeddings = await client.generateBatchEmbeddings(texts, 'passage');
+          
+          expect(embeddings).toHaveLength(3);
+          embeddings.forEach(embedding => {
+            expect(embedding).toHaveLength(1024);
+          });
+        });
+        
+        test('semantic similarity', async () => {
+          const text1 = 'Machine learning and artificial intelligence';
+          const text2 = 'AI and ML technologies';
+          const text3 = 'Cooking recipes and food preparation';
+          
+          const [emb1, emb2, emb3] = await client.generateBatchEmbeddings([
+            text1, text2, text3
+          ], 'passage');
+          
+          // Cosine similarity function
+          const cosineSimilarity = (a: number[], b: number[]) => {
+            const dotProduct = a.reduce((sum, val, i) => sum + val * b[i], 0);
+            return dotProduct; // Already normalized
+          };
+          
+          const sim12 = cosineSimilarity(emb1, emb2);
+          const sim13 = cosineSimilarity(emb1, emb3);
+          
+          // Similar texts should have higher similarity
+          expect(sim12).toBeGreaterThan(sim13);
+          expect(sim12).toBeGreaterThan(0.5);
+        });
+        
+        test('WORK document embedding', async () => {
+          const workContent = {
+            id: 'test-work',
+            what: 'Setup embedding service for semantic search',
+            how: [
+              'Install sentence-transformers',
+              'Load E5-large-v2 model',
+              'Create API endpoints'
+            ],
+            knowledge: [
+              'E5 models require text prefixes',
+              'GPU acceleration improves performance'
+            ]
+          };
+          
+          const embedding = await client.generateWorkEmbedding(workContent);
+          
+          expect(embedding).toHaveLength(1024);
+          expect(typeof embedding[0]).toBe('number');
+        });
+      });
+    
+    commands: |
+      # Setup Python environment
+      python -m venv embedding-env
+      source embedding-env/bin/activate  # On Windows: embedding-env\Scripts\activate
+      pip install -r embedding-service/requirements.txt
+      
+      # Start Redis cache (optional but recommended)
+      docker run -d --name embedding-cache -p 6379:6379 redis:7-alpine
+      
+      # Start embedding service
+      cd embedding-service
+      python app.py
+      
+      # Test embedding service
+      curl -X GET http://localhost:5000/health
+      
+      # Generate single embedding
+      curl -X POST http://localhost:5000/embed \
+        -H "Content-Type: application/json" \
+        -d '{"text": "This is a test document", "prefix": "passage"}'
+      
+      # Generate batch embeddings
+      curl -X POST http://localhost:5000/embed/batch \
+        -H "Content-Type: application/json" \
+        -d '{
+          "texts": ["First document", "Second document", "Third document"],
+          "prefix": "passage"
+        }'
+      
+      # Start with Docker Compose
+      docker-compose -f docker-compose.embedding.yml up -d
+      
+      # Install Node.js client dependencies
+      npm install axios
+      npm install -D @types/axios
+      
+      # Test Node.js integration
+      npm test -- embedding.test.ts
+      
+      # Monitor embedding service performance
+      curl -s http://localhost:5000/health | jq '.cache_available,.device'
+      
+      # Check Redis cache stats (if using Redis)
+      redis-cli info stats | grep keyspace

@@ -1,0 +1,329 @@
+# EPIC-TIDE Integration Test Suite
+# Validates the complete U → C → M → E flow
+
+test_suite:
+  name: "EPIC-TIDE Full Ecosystem"
+  version: "1.0.0"
+
+# ============================================
+# Test 1: Vocabulary Enforcement
+# ============================================
+
+test_vocabulary_enforcement:
+  description: "Ensure Claude Code uses correct vocabulary"
+  
+  test_cases:
+    - name: "Valid status values"
+      input:
+        status: "complete"
+      expected: PASS
+    
+    - name: "Invalid status values"
+      input:
+        status: "done"  # Not in vocabulary
+      expected: FAIL
+      error: "INVALID_STATUS"
+    
+    - name: "Status alias conversion"
+      input:
+        status: "✅"
+      converted_to: "complete"
+      expected: PASS
+
+# ============================================
+# Test 2: Semantic vs System Fields
+# ============================================
+
+test_field_separation:
+  description: "Verify Claude provides semantic, server provides system"
+  
+  claude_provides:
+    work:
+      what: "Setup database"
+      how: ["Create schema"]
+      metrics: ["Database ready"]
+    validate: 
+      - "No id field present"
+      - "No timestamp fields"
+  
+  server_adds:
+    work:
+      work_id: "work_2024_*"
+      created_at: "ISO-8601 timestamp"
+      version: 1
+    validate:
+      - "ID generated"
+      - "Timestamp added"
+
+# ============================================
+# Test 3: Complete WORK → PATH → TIDE Flow
+# ============================================
+
+test_complete_flow:
+  description: "End-to-end project execution"
+  
+  steps:
+    1_create_works:
+      - action: "save-work"
+        input:
+          what: "Setup environment"
+          how: ["Install deps"]
+          metrics: ["Env ready"]
+        expect:
+          work_id: "generated"
+          
+      - action: "save-work"
+        input:
+          what: "Create API"
+          how: ["Define routes"]
+          metrics: ["API responds"]
+        expect:
+          work_id: "generated"
+    
+    2_create_path:
+      action: "create-path"
+      input:
+        what: "Build system"
+        works: ["setup-environment", "create-api"]
+        metrics: ["System running"]
+      expect:
+        path_id: "generated"
+        proven: false
+    
+    3_start_tide1:
+      action: "start-tide"
+      input:
+        path_name: "build-system"
+      expect:
+        tide_id: "generated"
+        attempt: 1
+    
+    4_execute_works:
+      - action: "update-execution"
+        input:
+          work_name: "setup-environment"
+          status: "complete"
+        expect:
+          success: true
+          
+      - action: "update-execution"
+        input:
+          work_name: "create-api"
+          status: "failed"
+          error: "Missing auth"
+        expect:
+          success: true
+    
+    5_complete_tide1:
+      action: "complete-tide"
+      input:
+        outcome: "partial"
+        learnings: "Need auth middleware"
+      expect:
+        next_action: "retry_tide"
+    
+    6_start_tide2:
+      action: "start-tide"
+      input:
+        path_name: "build-system"
+        adaptations:
+          - action: "insert"
+            target: "add-auth"
+            details:
+              position: "before"
+              relative_to: "create-api"
+      expect:
+        attempt: 2
+    
+    7_execute_adapted:
+      - action: "update-execution"
+        input:
+          work_name: "setup-environment"
+          status: "reused"
+          
+      - action: "update-execution"
+        input:
+          work_name: "add-auth"
+          status: "complete"
+          
+      - action: "update-execution"
+        input:
+          work_name: "create-api"
+          status: "complete"
+    
+    8_complete_tide2:
+      action: "complete-tide"
+      input:
+        outcome: "success"
+        metrics_achieved:
+          "System running": true
+      expect:
+        next_action: "create_pattern"
+
+# ============================================
+# Test 4: Pattern Extraction
+# ============================================
+
+test_pattern_extraction:
+  description: "Verify pattern creation from successful TIDEs"
+  
+  preconditions:
+    - "3+ successful TIDEs with similar adaptations"
+  
+  action: "create-pattern"
+  input:
+    tide_ids: ["tide1", "tide2", "tide3"]
+    domain: "web-api"
+  
+  expect:
+    pattern_id: "generated"
+    common_sequence: ["extracted"]
+    proven_adaptations:
+      auth_before_api:
+        success_rate: ">0.8"
+
+# ============================================
+# Test 5: Error Handling
+# ============================================
+
+test_error_handling:
+  description: "Verify proper error responses"
+  
+  test_cases:
+    - name: "Invalid work reference"
+      action: "create-path"
+      input:
+        works: ["non-existent-work"]
+      expect:
+        error: "WORK_NOT_FOUND"
+    
+    - name: "Duplicate TIDE attempt"
+      action: "start-tide"
+      input:
+        path_name: "already-running"
+      expect:
+        error: "TIDE_ALREADY_RUNNING"
+    
+    - name: "Complete without execution"
+      action: "complete-tide"
+      input:
+        tide_id: "empty-tide"
+      expect:
+        error: "INCOMPLETE_EXECUTION"
+
+# ============================================
+# Test 6: JSONB Generation
+# ============================================
+
+test_jsonb_generation:
+  description: "Verify YAML → JSONB conversion"
+  
+  input_yaml: |
+    TIDE:
+      execution:
+        setup: complete
+        api: failed
+  
+  expected_jsonb:
+    execution:
+      setup:
+        status: "complete"
+      api:
+        status: "failed"
+  
+  validate:
+    - "Structure normalized"
+    - "Status values preserved"
+
+# ============================================
+# Test 7: MCP Tool Schema Validation
+# ============================================
+
+test_mcp_validation:
+  description: "Verify inputSchema enforcement"
+  
+  test_cases:
+    - name: "Missing required field"
+      tool: "save-work"
+      input:
+        what: "Setup"
+        # Missing 'how' and 'metrics'
+      expect: VALIDATION_ERROR
+    
+    - name: "Wrong type"
+      tool: "save-work"
+      input:
+        what: "Setup"
+        how: "single string"  # Should be array
+        metrics: ["Ready"]
+      expect: VALIDATION_ERROR
+    
+    - name: "Valid input"
+      tool: "save-work"
+      input:
+        what: "Setup"
+        how: ["Step 1"]
+        metrics: ["Ready"]
+      expect: PASS
+
+# ============================================
+# Test 8: Concurrent TIDE Prevention
+# ============================================
+
+test_concurrency:
+  description: "Prevent multiple active TIDEs per PATH"
+  
+  steps:
+    - start_tide:
+        path_name: "test-path"
+        expect: SUCCESS
+    
+    - start_another_tide:
+        path_name: "test-path"
+        expect: ERROR
+        error: "TIDE_ALREADY_RUNNING"
+    
+    - complete_first_tide:
+        outcome: "success"
+        expect: SUCCESS
+    
+    - start_new_tide:
+        path_name: "test-path"
+        expect: SUCCESS
+        attempt: 2
+
+# ============================================
+# Performance Benchmarks
+# ============================================
+
+performance_benchmarks:
+  api_response_times:
+    save_work: "<200ms"
+    create_path: "<300ms"
+    start_tide: "<250ms"
+    update_execution: "<150ms"
+    complete_tide: "<400ms"
+    query_patterns: "<500ms"
+  
+  concurrent_users: 100
+  requests_per_second: 1000
+
+# ============================================
+# Validation Script
+# ============================================
+
+validation_script: |
+  #!/bin/bash
+  
+  # Run all tests
+  for test in test_*.yml; do
+    echo "Running $test..."
+    npm run test:integration -- $test
+    
+    if [ $? -ne 0 ]; then
+      echo "FAILED: $test"
+      exit 1
+    fi
+  done
+  
+  echo "All tests passed!"

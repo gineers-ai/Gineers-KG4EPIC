@@ -1,0 +1,199 @@
+# WORK: Create AI Instructions (v4 AI-Native)
+# Self-contained with Claude Code integration patterns
+
+WORK:
+  id: create-ai-instructions
+  what: "Create comprehensive instructions for Claude Code to use EPIC-TIDE system effectively"
+  
+  # CONTEXT - Task environment
+  context:
+    location: Documentation and AI integration phase
+    prerequisites:
+      - "EPIC-TIDE system architecture understood"
+      - "Database schema and API contracts defined" 
+      - "Knowledge of Claude Code capabilities and limitations"
+    outputs:
+      - "Complete Claude Code instruction document"
+      - "Conversation flow examples"
+      - "Error handling patterns"
+      - "Best practice guidelines"
+    dependencies: ["design-database-schema", "design-api-contracts", "define-vocabulary"]
+    
+  # KNOWLEDGE - Critical AI instruction information
+  knowledge:
+    - "Claude Code excels at structured data manipulation and API calls"
+    - "Status values must be controlled vocabulary (pending, in_progress, completed, failed)"
+    - "Server generates all IDs - Claude never creates work_id, path_id, tide_id"
+    - "Adaptations are semantic changes Claude makes when following PATH fails"
+    - "Learning capture happens after each WORK completion, not during"
+    - "Claude should validate vocabulary before API calls to prevent errors"
+    - "Conversation examples must show both success and failure scenarios"
+  
+  # EXECUTION
+  how:
+    - "Define Claude's role vs server's role in EPIC-TIDE workflow"
+    - "Document all controlled vocabulary with examples"
+    - "Create adaptation patterns for common WORK failures"
+    - "Provide learning capture templates and guidelines"
+    - "Add complete conversation examples for each workflow"
+    - "Include error handling and recovery patterns"
+  
+  metrics:
+    - "Clear separation of concerns documented"
+    - "All EPIC-TIDE workflows have examples"
+    - "Vocabulary validation rules provided"
+    - "Error scenarios covered with solutions"
+  
+  # LEARNINGS - From AI integration experience
+  learnings:
+    - source: "Initial Claude integration"
+      learning: "Claude needs explicit vocabulary lists to avoid inventing status values"
+    - source: "TIDE execution testing"
+      learning: "Adaptation capture works better with structured templates than free-form"
+    - source: "Error handling"
+      learning: "Claude should validate inputs before API calls, not rely on server errors"
+    - source: "Learning synthesis"
+      learning: "Specific learning prompts yield better insights than generic 'what did you learn?'"
+  
+  # TROUBLESHOOTING - Common AI instruction issues
+  troubleshooting:
+    - issue: "Claude invents invalid status values"
+      symptoms: "API returns 400 errors for unknown status"
+      solution: "Add vocabulary validation step before all API calls"
+      prevention: "Include controlled vocabulary as constants in instructions"
+    
+    - issue: "Adaptations are too generic"
+      symptoms: "Learning capture provides minimal value"
+      solution: "Use structured adaptation templates with specific fields"
+      prevention: "Provide adaptation examples for common failure patterns"
+    
+    - issue: "Claude attempts to create IDs"
+      symptoms: "Server rejects requests with client-generated IDs"
+      solution: "Explicitly state server generates all IDs, show examples"
+      prevention: "Include ID generation rules in every API example"
+    
+    - issue: "Missing context in conversations"
+      symptoms: "Claude asks for information that should be available"
+      solution: "Structure examples to show context passing between turns"
+      prevention: "Include session state management in guidelines"
+  
+  # COMPLETE IMPLEMENTATION
+  artifacts:
+    instruction_document: |
+      # Claude Code Instructions for EPIC-TIDE
+      
+      ## Core Principles
+      1. SERVER GENERATES IDs: Never create work_id, path_id, tide_id
+      2. VALIDATE VOCABULARY: Check status values before API calls
+      3. CAPTURE ADAPTATIONS: Document what you changed from original WORK
+      4. STRUCTURED LEARNING: Use templates, not free-form responses
+      
+      ## Controlled Vocabulary
+      ```yaml
+      STATUS: [pending, in_progress, completed, failed]
+      OUTCOME: [success, partial, failed] 
+      ADAPTATION_TYPE: [sequence_change, parameter_adjustment, tool_substitution, requirement_relaxation]
+      ```
+      
+      ## Workflow: Execute WORK
+      ```
+      1. GET /api/works/{work_id} -> Get WORK definition
+      2. Validate prerequisites met
+      3. PATCH /api/tides/{tide_id} status=in_progress, work_name={work_id}
+      4. Execute WORK steps with adaptations as needed
+      5. PATCH /api/tides/{tide_id} with:
+         - status=completed/failed
+         - adaptations=[{type, reason, change}]
+         - learnings="Specific insight from execution"
+      ```
+      
+      ## Example: WORK Adaptation
+      ```json
+      {
+        "adaptations": [
+          {
+            "type": "tool_substitution",
+            "reason": "Docker not available in environment", 
+            "change": "Used Node.js built-in tools instead of Docker commands"
+          }
+        ],
+        "learnings": "Local development environments may lack Docker - provide fallback approaches"
+      }
+      ```
+      
+      ## Error Handling Patterns
+      - Vocabulary validation: Check against constants before API calls
+      - Missing dependencies: Query for dependency status before starting
+      - Adaptation capture: Use structured format, avoid "I had to change X"
+      - Learning synthesis: Focus on "why this happened" and "how to prevent"
+    
+    conversation_examples: |
+      ## Example 1: Successful WORK Execution
+      
+      Human: Execute the setup-nodejs-project WORK from tide_abc123
+      
+      Claude: I'll execute the setup-nodejs-project WORK. Let me get the details first.
+      
+      ```bash
+      curl GET /api/works/setup-nodejs-project
+      ```
+      
+      The WORK requires creating package.json and installing dependencies. I'll mark this WORK as in progress:
+      
+      ```bash  
+      curl PATCH /api/tides/tide_abc123 -d '{
+        "status": "in_progress",
+        "execution": {"setup-nodejs-project": "in_progress"}
+      }'
+      ```
+      
+      Now executing the steps:
+      1. Creating package.json... ✓
+      2. Installing dependencies... ✓
+      3. Setting up test structure... ✓
+      
+      All steps completed successfully. Updating TIDE:
+      
+      ```bash
+      curl PATCH /api/tides/tide_abc123 -d '{
+        "status": "completed", 
+        "execution": {"setup-nodejs-project": "completed"},
+        "learnings": "Project structure setup went smoothly - no adaptations needed"
+      }'
+      ```
+      
+      ## Example 2: WORK with Adaptations
+      
+      Human: Execute the setup-docker-environment WORK
+      
+      Claude: I'll execute the setup-docker-environment WORK, but I notice Docker isn't available in this environment. Let me adapt:
+      
+      Original: Use Docker for containerization
+      Adaptation: Set up local development with Node.js directly
+      
+      ```bash
+      curl PATCH /api/tides/tide_abc123 -d '{
+        "status": "completed",
+        "execution": {"setup-docker-environment": "completed"}, 
+        "adaptations": [{
+          "type": "tool_substitution",
+          "reason": "Docker not available in development environment",
+          "change": "Used local Node.js setup instead of containerization"
+        }],
+        "learnings": "Development environments should have Docker fallback procedures documented"
+      }'
+      ```
+    
+    validation_checklist: |
+      ## Pre-API Call Validation
+      - [ ] Status value in [pending, in_progress, completed, failed]
+      - [ ] Outcome value in [success, partial, failed] (if provided)
+      - [ ] Adaptation type in controlled vocabulary (if provided)
+      - [ ] No client-generated IDs in request
+      - [ ] Required fields present based on API contract
+      
+      ## Post-Execution Validation  
+      - [ ] Adaptations documented with specific reasons
+      - [ ] Learnings contain actionable insights
+      - [ ] Status accurately reflects execution outcome
+      - [ ] Dependencies updated if WORK creates new resources

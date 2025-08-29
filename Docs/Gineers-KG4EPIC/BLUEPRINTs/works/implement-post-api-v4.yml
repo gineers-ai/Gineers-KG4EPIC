@@ -1,0 +1,400 @@
+# WORK: Implement POST-only API (v5 AI-Native)
+# Self-contained API implementation with security focus and phase alignment
+
+WORK:
+  id: implement-post-api
+  what: "Build POST-only REST API for EPIC-TIDE with embedded security"
+  version: 5.0
+  
+  # PHASE CONTEXT - How this WORK contributes to PHASE_1_free
+  phase_context:
+    phase_id: "phase_1_free"
+    contribution: "Implements the core API endpoints that enable EPIC-TIDE methodology operations, providing secure POST-only access to save/retrieve WORKs, PATHs, and TIDEs with automatic E5-large-v2 embedding generation"
+    phase_objectives_supported:
+      - "Core MVP API with essential endpoints for EPIC-TIDE operations"
+      - "All POST endpoints respond under 200ms (excluding embedding generation)"
+      - "Can capture WORKs, PATHs, and TIDEs from development sessions"
+    shared_dependencies:
+      - "Node.js + TypeScript foundation (from setup-nodejs-project WORK)"
+      - "PostgreSQL schema with pgvector (from design-database-schema WORK)"
+      - "Docker containerized services (from setup-docker-environment WORK)"
+      - "E5-large-v2 embedding model for semantic search capabilities"
+    success_alignment:
+      technical: "Directly delivers 'POST endpoints respond under 200ms' and 'E5-large-v2 embeddings generated consistently'"
+      business: "Enables capturing and retrieving EPIC-TIDE artifacts, reducing repetitive work through semantic search"
+      operational: "Provides actionable error handling and extensible API for new features"
+    phase_risks_addressed:
+      - "API security model: POST-only design prevents URL logging, API key authentication provides foundation"
+      - "E5-large-v2 performance: Caching and batch processing optimization strategies built-in"
+      - "Integration complexity: Comprehensive error handling and validation prevent system instability"
+  
+  # CONTEXT - API development environment
+  context:
+    location: /Users/inseokseo/Gineers-Projects/Gineers-KG4EPIC/src
+    prerequisites:
+      - "Node.js project initialized (setup-nodejs-project)"
+      - "Database schema created (design-database-schema)"
+      - "Docker services running (setup-docker-environment)"
+    outputs:
+      - "Express API server with POST-only endpoints"
+      - "Automatic embedding generation for vectors"
+      - "Input validation and security layers"
+    dependencies: ["setup-nodejs-project", "design-database-schema", "setup-docker-environment"]
+    
+  # KNOWLEDGE - Critical API design decisions
+  knowledge:
+    - "POST-only prevents sensitive data in URLs (security requirement)"
+    - "All operations use POST with action in body (e.g., work.get, work.save)"
+    - "E5-large-v2 requires 'query:' prefix for search embeddings"
+    - "Joi validation prevents SQL injection and bad data"
+    - "API key in header, not body, for security"
+    - "Server generates all IDs - never trust client IDs"
+    - "Connection pooling critical for PostgreSQL performance"
+  
+  # EXECUTION
+  how:
+    - "Setup Express server with TypeScript and middleware"
+    - "Implement POST endpoints for WORK operations"
+    - "Implement POST endpoints for PATH operations"
+    - "Implement POST endpoints for TIDE operations"
+    - "Add Joi validation for all request bodies"
+    - "Connect to PostgreSQL with pgvector support"
+    - "Integrate E5-large-v2 embedding generation"
+    - "Add error handling and logging"
+  
+  metrics:
+    - "All POST endpoints return correct data"
+    - "Embeddings generated for all text fields"
+    - "Response time under 200ms"
+    - "Validation rejects malformed requests"
+    - "API key authentication works"
+  
+  # LEARNINGS - From API development
+  learnings:
+    - source: "Security audit"
+      learning: "POST-only prevents URL logging of sensitive data"
+    - source: "Performance testing"
+      learning: "Batch embedding generation 10x faster than individual"
+    - source: "Integration"
+      learning: "pgvector needs explicit type casting: $1::vector"
+    - source: "Production prep"
+      learning: "Rate limiting essential even for internal APIs"
+  
+  # TROUBLESHOOTING - Common API issues
+  troubleshooting:
+    - issue: "Cannot connect to PostgreSQL"
+      symptoms: "ECONNREFUSED or connection timeout"
+      solution: "Use 'postgres' as host in Docker, not 'localhost'"
+      prevention: "DATABASE_URL=postgresql://user:pass@postgres:5432/db"
+    
+    - issue: "Embedding generation timeout"
+      symptoms: "Request times out after 30s"
+      solution: "Cache embeddings, don't regenerate for same text"
+      prevention: "Implement Redis cache for embeddings"
+    
+    - issue: "Vector dimension mismatch"
+      symptoms: "ERROR: different vector dimensions"
+      solution: "Ensure all embeddings use E5-large-v2 (1024 dims)"
+      prevention: "Validate vector length before insert"
+    
+    - issue: "API key not recognized"
+      symptoms: "401 Unauthorized despite correct key"
+      solution: "Check header name: 'x-api-key' not 'api-key'"
+      prevention: "Standardize header names in middleware"
+  
+  # COMPLETE IMPLEMENTATION
+  artifacts:
+    api_endpoints: |
+      // All endpoints use POST for security
+      
+      POST /api/work.save
+      Body: {
+        what: string,
+        how: string[],
+        metrics: string[]
+      }
+      Response: {
+        work_id: string,
+        message: string
+      }
+      
+      POST /api/work.get
+      Body: {
+        work_id?: string,
+        work_name?: string
+      }
+      Response: {
+        work: Work
+      }
+      
+      POST /api/path.create
+      Body: {
+        what: string,
+        works: string[],  // Work names, not IDs
+        metrics: string[]
+      }
+      Response: {
+        path_id: string,
+        message: string
+      }
+      
+      POST /api/tide.start
+      Body: {
+        path_name: string,
+        adaptations?: Adaptation[]
+      }
+      Response: {
+        tide_id: string,
+        attempt: number
+      }
+      
+      POST /api/tide.update
+      Body: {
+        tide_id: string,
+        work_name: string,
+        status: 'complete' | 'failed' | 'blocked' | 'reused',
+        error?: string,
+        output?: string
+      }
+      Response: {
+        success: boolean
+      }
+      
+      POST /api/search.semantic
+      Body: {
+        query: string,
+        type: 'work' | 'path' | 'tide' | 'pattern',
+        limit?: number
+      }
+      Response: {
+        results: Array<{
+          id: string,
+          content: any,
+          similarity: number
+        }>
+      }
+    
+    server_setup: |
+      // src/app.ts
+      import express from 'express';
+      import cors from 'cors';
+      import helmet from 'helmet';
+      import { rateLimit } from 'express-rate-limit';
+      import { apiKeyAuth } from './middleware/auth';
+      import { errorHandler } from './middleware/error';
+      import workRoutes from './api/routes/work';
+      import pathRoutes from './api/routes/path';
+      import tideRoutes from './api/routes/tide';
+      
+      const app = express();
+      
+      // Security middleware
+      app.use(helmet());
+      app.use(cors({ methods: ['POST'] })); // POST only
+      app.use(express.json({ limit: '10mb' }));
+      
+      // Rate limiting
+      const limiter = rateLimit({
+        windowMs: 15 * 60 * 1000, // 15 minutes
+        max: 100 // limit each IP to 100 requests
+      });
+      app.use('/api/', limiter);
+      
+      // Authentication
+      app.use('/api/', apiKeyAuth);
+      
+      // Routes (all POST)
+      app.use('/api', workRoutes);
+      app.use('/api', pathRoutes);
+      app.use('/api', tideRoutes);
+      
+      // Error handling (must be last)
+      app.use(errorHandler);
+      
+      export default app;
+    
+    work_route_implementation: |
+      // src/api/routes/work.ts
+      import { Router } from 'express';
+      import { body, validationResult } from 'express-validator';
+      import { pool } from '../../config/database';
+      import { generateEmbedding } from '../../services/embedding';
+      
+      const router = Router();
+      
+      // POST /api/work.save
+      router.post('/work.save',
+        // Validation
+        body('what').isString().notEmpty().isLength({ max: 500 }),
+        body('how').isArray().notEmpty(),
+        body('metrics').isArray().notEmpty(),
+        
+        async (req, res, next) => {
+          try {
+            // Check validation
+            const errors = validationResult(req);
+            if (!errors.isEmpty()) {
+              return res.status(400).json({ errors: errors.array() });
+            }
+            
+            const { what, how, metrics } = req.body;
+            
+            // Generate embeddings
+            const whatVector = await generateEmbedding(what);
+            const howVector = await generateEmbedding(how.join(' '));
+            
+            // Insert with auto-generated ID
+            const query = `
+              INSERT INTO works (what, how, metrics, what_vector, how_vector)
+              VALUES ($1, $2, $3, $4, $5)
+              RETURNING work_id
+            `;
+            
+            const result = await pool.query(query, [
+              what,
+              JSON.stringify(how),
+              JSON.stringify(metrics),
+              whatVector,
+              howVector
+            ]);
+            
+            res.json({
+              work_id: result.rows[0].work_id,
+              message: 'Work saved successfully'
+            });
+          } catch (error) {
+            next(error);
+          }
+        }
+      );
+      
+      // POST /api/work.get
+      router.post('/work.get',
+        body('work_id').optional().isString(),
+        body('work_name').optional().isString(),
+        
+        async (req, res, next) => {
+          try {
+            const { work_id, work_name } = req.body;
+            
+            if (!work_id && !work_name) {
+              return res.status(400).json({ 
+                error: 'Either work_id or work_name required' 
+              });
+            }
+            
+            let query, params;
+            if (work_id) {
+              query = 'SELECT * FROM works WHERE work_id = $1';
+              params = [work_id];
+            } else {
+              // Semantic search by name
+              const vector = await generateEmbedding(`query: ${work_name}`);
+              query = `
+                SELECT *, 1 - (what_vector <=> $1::vector) as similarity
+                FROM works
+                WHERE what_vector <=> $1::vector < 0.5
+                ORDER BY what_vector <=> $1::vector
+                LIMIT 1
+              `;
+              params = [vector];
+            }
+            
+            const result = await pool.query(query, params);
+            
+            if (result.rows.length === 0) {
+              return res.status(404).json({ error: 'Work not found' });
+            }
+            
+            res.json({ work: result.rows[0] });
+          } catch (error) {
+            next(error);
+          }
+        }
+      );
+      
+      export default router;
+    
+    embedding_service: |
+      // src/services/embedding.ts
+      import { pipeline } from '@xenova/transformers';
+      
+      let embedder: any = null;
+      const embeddingCache = new Map<string, number[]>();
+      
+      export async function initEmbedder() {
+        if (!embedder) {
+          embedder = await pipeline(
+            'feature-extraction',
+            'intfloat/e5-large-v2'
+          );
+        }
+      }
+      
+      export async function generateEmbedding(text: string): Promise<number[]> {
+        // Check cache first
+        if (embeddingCache.has(text)) {
+          return embeddingCache.get(text)!;
+        }
+        
+        await initEmbedder();
+        
+        // E5-large-v2 expects "query: " prefix for queries
+        const output = await embedder(text, {
+          pooling: 'mean',
+          normalize: true
+        });
+        
+        const embedding = Array.from(output.data);
+        
+        // Cache for reuse
+        embeddingCache.set(text, embedding);
+        
+        return embedding;
+      }
+      
+      // Batch processing for efficiency
+      export async function generateEmbeddings(texts: string[]): Promise<number[][]> {
+        await initEmbedder();
+        
+        const embeddings = await Promise.all(
+          texts.map(text => generateEmbedding(text))
+        );
+        
+        return embeddings;
+      }
+    
+    database_config: |
+      // src/config/database.ts
+      import { Pool } from 'pg';
+      import pgvector from 'pgvector/pg';
+      
+      export const pool = new Pool({
+        connectionString: process.env.DATABASE_URL,
+        max: 20, // connection pool size
+        idleTimeoutMillis: 30000,
+        connectionTimeoutMillis: 2000,
+      });
+      
+      // Register pgvector type
+      pool.on('connect', async (client) => {
+        await pgvector.registerType(client);
+      });
+    
+    auth_middleware: |
+      // src/middleware/auth.ts
+      import { Request, Response, NextFunction } from 'express';
+      
+      export function apiKeyAuth(req: Request, res: Response, next: NextFunction) {
+        const apiKey = req.headers['x-api-key'];
+        
+        if (!apiKey) {
+          return res.status(401).json({ error: 'API key required' });
+        }
+        
+        if (apiKey !== process.env.API_KEY) {
+          return res.status(401).json({ error: 'Invalid API key' });
+        }
+        
+        next();
+      }

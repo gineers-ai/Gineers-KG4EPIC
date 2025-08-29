@@ -1,0 +1,591 @@
+# WORK: Setup PostgreSQL with pgvector (v4 AI-Native)
+# Self-contained execution unit with embedded context
+
+WORK:
+  id: setup-postgres-pgvector
+  what: "Initialize PostgreSQL database with pgvector extension for semantic search and EPIC-TIDE data storage"
+  
+  # CONTEXT - Environment and dependencies
+  context:
+    location: /Users/inseokseo/Gineers-Projects/Gineers-KG4EPIC
+    prerequisites: 
+      - "Docker installed and running"
+      - "Basic understanding of PostgreSQL administration"
+      - "Network port 5432 available (or alternative port chosen)"
+    outputs:
+      - "PostgreSQL 15+ with pgvector extension running"
+      - "Database 'epic_tide' created with proper schema"
+      - "Vector columns optimized for E5-large-v2 (1024 dims)"
+      - "HNSW indexes for fast similarity search"
+      - "Connection pooling configured"
+      - "Admin user and application user created"
+    dependencies: []
+    
+  # KNOWLEDGE - Critical information
+  knowledge:
+    - "pgvector extension provides efficient vector storage and similarity operations"
+    - "E5-large-v2 embeddings are 1024-dimensional float32 vectors"
+    - "HNSW (Hierarchical Navigable Small World) indexes provide O(log n) similarity search"
+    - "Cosine distance (<->) most appropriate for normalized embeddings"
+    - "Connection pooling essential for production performance"
+    - "Vector operations are computationally intensive - consider dedicated CPU/memory"
+    - "pgvector supports up to 16,000 dimensions per vector"
+  
+  # EXECUTION
+  how:
+    - "Pull official pgvector/pgvector Docker image (includes PostgreSQL + pgvector)"
+    - "Create Docker container with persistent data volumes"
+    - "Initialize database with proper encoding and collation"
+    - "Create application database and users with appropriate permissions"
+    - "Design schema for EPIC-TIDE entities (works, paths, tides, patterns)"
+    - "Add vector columns for embedding storage"
+    - "Create HNSW indexes for vector similarity search"
+    - "Configure connection limits and memory settings"
+    - "Add health checks and monitoring"
+  
+  metrics:
+    - "PostgreSQL accepts connections on configured port"
+    - "pgvector extension loads without errors"
+    - "Can store 1024-dimensional vectors successfully"
+    - "Vector similarity queries return results within 100ms for 1k records"
+    - "Database survives container restarts with data intact"
+    - "All required tables and indexes created successfully"
+  
+  # LEARNINGS - From development experience
+  learnings:
+    - source: "Production Deployment"
+      learning: "pgvector HNSW indexes dramatically improve query performance but require more memory"
+    - source: "Performance Testing"
+      learning: "Normalized embeddings with cosine distance provide better semantic similarity than dot product"
+    - source: "Scale Testing"
+      learning: "Connection pooling reduces latency by 70% under concurrent load"
+  
+  # TROUBLESHOOTING - Known issues and fixes
+  troubleshooting:
+    - issue: "pgvector extension not found"
+      symptoms: "ERROR: extension 'vector' not available"
+      solution: "Use pgvector/pgvector image, not standard postgres image"
+      prevention: "Always verify pgvector extension loaded: SELECT * FROM pg_extension WHERE extname='vector'"
+    
+    - issue: "Vector dimension mismatch"
+      symptoms: "ERROR: vector dimension mismatch" 
+      solution: "Ensure all embeddings are exactly 1024 dimensions, check embedding generation"
+      prevention: "Add dimension validation in application layer before database insert"
+      
+    - issue: "Slow vector similarity queries"
+      symptoms: "Queries take >5 seconds with 10k+ vectors"
+      solution: "Create HNSW index: CREATE INDEX ON table USING hnsw (vector_col vector_cosine_ops)"
+      prevention: "Plan indexing strategy during schema design, monitor query performance"
+    
+    - issue: "Out of memory during index creation"
+      symptoms: "ERROR: out of memory" during CREATE INDEX
+      solution: "Increase maintenance_work_mem or create index with smaller m parameter"
+      prevention: "Size PostgreSQL memory appropriately for vector operations"
+  
+  # COMPLETE IMPLEMENTATION
+  artifacts:
+    docker_compose: |
+      # docker-compose.postgres.yml
+      version: '3.8'
+      
+      services:
+        postgres:
+          image: pgvector/pgvector:pg15
+          container_name: epic-postgres
+          environment:
+            POSTGRES_DB: epic_tide
+            POSTGRES_USER: epic_admin
+            POSTGRES_PASSWORD: ${POSTGRES_ADMIN_PASSWORD:-change_me_admin}
+            # Additional databases and users will be created via init script
+          ports:
+            - "${POSTGRES_PORT:-5432}:5432"
+          volumes:
+            - ./init-db.sql:/docker-entrypoint-initdb.d/01-init.sql
+            - ./schema.sql:/docker-entrypoint-initdb.d/02-schema.sql
+            - postgres_data:/var/lib/postgresql/data
+          command: >
+            postgres
+            -c shared_preload_libraries=vector
+            -c max_connections=200
+            -c shared_buffers=256MB
+            -c effective_cache_size=1GB
+            -c maintenance_work_mem=64MB
+            -c checkpoint_completion_target=0.9
+            -c wal_buffers=16MB
+            -c default_statistics_target=100
+            -c random_page_cost=1.1
+            -c effective_io_concurrency=200
+          healthcheck:
+            test: ["CMD-SHELL", "pg_isready -U epic_admin -d epic_tide"]
+            interval: 10s
+            timeout: 5s
+            retries: 5
+            start_period: 30s
+          restart: unless-stopped
+          networks:
+            - epic_network
+      
+      volumes:
+        postgres_data:
+          driver: local
+      
+      networks:
+        epic_network:
+          driver: bridge
+    
+    init_script: |
+      -- init-db.sql
+      -- Initialize database with extensions and users
+      
+      -- Create extensions (must be done by superuser)
+      CREATE EXTENSION IF NOT EXISTS vector;
+      CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+      CREATE EXTENSION IF NOT EXISTS pgcrypto;
+      CREATE EXTENSION IF NOT EXISTS btree_gin;
+      CREATE EXTENSION IF NOT EXISTS pg_stat_statements;
+      
+      -- Create application user
+      DO $$ 
+      BEGIN
+        IF NOT EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = 'epic_app') THEN
+          CREATE USER epic_app WITH PASSWORD 'epic_app_pass_change_me';
+        END IF;
+      END
+      $$;
+      
+      -- Grant permissions to application user
+      GRANT CONNECT ON DATABASE epic_tide TO epic_app;
+      GRANT USAGE ON SCHEMA public TO epic_app;
+      GRANT CREATE ON SCHEMA public TO epic_app;
+      
+      -- Grant permissions on future tables
+      ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO epic_app;
+      ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT USAGE, SELECT ON SEQUENCES TO epic_app;
+      
+      -- Performance tuning for vector operations
+      ALTER SYSTEM SET max_parallel_workers = 8;
+      ALTER SYSTEM SET max_parallel_workers_per_gather = 4;
+      ALTER SYSTEM SET shared_preload_libraries = 'vector,pg_stat_statements';
+      
+      -- Vector-specific settings
+      ALTER SYSTEM SET vector.max_workers = 4;
+      
+      SELECT pg_reload_conf();
+    
+    schema_sql: |
+      -- schema.sql
+      -- Complete database schema for EPIC-TIDE KG4EPIC
+      
+      -- Epic Works table
+      CREATE TABLE IF NOT EXISTS epic_works (
+        id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+        work_id VARCHAR(255) UNIQUE NOT NULL,
+        content JSONB NOT NULL,
+        version INTEGER NOT NULL DEFAULT 1,
+        work_type VARCHAR(100) GENERATED ALWAYS AS (content->>'type') STORED,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+        
+        -- Constraints
+        CONSTRAINT valid_work_id CHECK (length(work_id) > 0),
+        CONSTRAINT valid_version CHECK (version > 0),
+        CONSTRAINT valid_content CHECK (jsonb_typeof(content) = 'object')
+      );
+      
+      -- Work embeddings table (separate for performance)
+      CREATE TABLE IF NOT EXISTS work_embeddings (
+        id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+        work_id VARCHAR(255) UNIQUE NOT NULL,
+        embedding vector(1024) NOT NULL, -- E5-large-v2 dimensions
+        model_version VARCHAR(50) DEFAULT 'intfloat/e5-large-v2',
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+        
+        FOREIGN KEY (work_id) REFERENCES epic_works(work_id) ON DELETE CASCADE,
+        
+        -- Constraints
+        CONSTRAINT valid_embedding_dims CHECK (vector_dims(embedding) = 1024)
+      );
+      
+      -- Epic Paths table
+      CREATE TABLE IF NOT EXISTS epic_paths (
+        id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+        path_id VARCHAR(255) UNIQUE NOT NULL,
+        name VARCHAR(255) NOT NULL,
+        description TEXT,
+        work_ids TEXT[] NOT NULL,
+        goals TEXT[] NOT NULL,
+        metadata JSONB DEFAULT '{}',
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+        
+        -- Constraints
+        CONSTRAINT valid_path_id CHECK (length(path_id) > 0),
+        CONSTRAINT valid_name CHECK (length(name) > 0),
+        CONSTRAINT has_work_ids CHECK (array_length(work_ids, 1) > 0),
+        CONSTRAINT has_goals CHECK (array_length(goals, 1) > 0)
+      );
+      
+      -- TIDE Executions table
+      CREATE TABLE IF NOT EXISTS tide_executions (
+        id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+        execution_id VARCHAR(255) UNIQUE NOT NULL,
+        path_id VARCHAR(255) NOT NULL,
+        tide_number INTEGER NOT NULL,
+        status VARCHAR(50) NOT NULL DEFAULT 'initialized',
+        current_work_index INTEGER NOT NULL DEFAULT 0,
+        total_works INTEGER NOT NULL DEFAULT 0,
+        progress_percentage DECIMAL(5,2) DEFAULT 0.00,
+        progress_data JSONB DEFAULT '{}',
+        learnings JSONB DEFAULT '[]',
+        execution_context JSONB DEFAULT '{}',
+        started_at TIMESTAMP WITH TIME ZONE,
+        completed_at TIMESTAMP WITH TIME ZONE,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+        
+        FOREIGN KEY (path_id) REFERENCES epic_paths(path_id) ON DELETE CASCADE,
+        
+        -- Constraints
+        CONSTRAINT valid_execution_id CHECK (length(execution_id) > 0),
+        CONSTRAINT valid_tide_number CHECK (tide_number > 0),
+        CONSTRAINT valid_status CHECK (status IN ('initialized', 'in_progress', 'completed', 'failed', 'partial')),
+        CONSTRAINT valid_progress CHECK (progress_percentage >= 0 AND progress_percentage <= 100),
+        CONSTRAINT valid_work_index CHECK (current_work_index >= 0)
+      );
+      
+      -- Pattern Extractions table (for learnings and patterns)
+      CREATE TABLE IF NOT EXISTS pattern_extractions (
+        id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+        pattern_id VARCHAR(255) UNIQUE NOT NULL,
+        pattern_type VARCHAR(100) NOT NULL, -- 'learning', 'troubleshooting', 'workflow', etc.
+        pattern_text TEXT NOT NULL,
+        frequency INTEGER DEFAULT 1,
+        confidence DECIMAL(3,2) DEFAULT 0.50,
+        sources TEXT[] NOT NULL, -- work_ids or execution_ids where pattern was found
+        metadata JSONB DEFAULT '{}',
+        embedding vector(1024), -- For pattern similarity search
+        first_seen TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+        last_seen TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+        
+        -- Constraints
+        CONSTRAINT valid_pattern_id CHECK (length(pattern_id) > 0),
+        CONSTRAINT valid_frequency CHECK (frequency > 0),
+        CONSTRAINT valid_confidence CHECK (confidence >= 0 AND confidence <= 1),
+        CONSTRAINT has_sources CHECK (array_length(sources, 1) > 0),
+        CONSTRAINT valid_embedding_dims_pattern CHECK (embedding IS NULL OR vector_dims(embedding) = 1024)
+      );
+      
+      -- Semantic Search Cache (for performance optimization)
+      CREATE TABLE IF NOT EXISTS search_cache (
+        id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+        query_hash VARCHAR(64) UNIQUE NOT NULL, -- SHA-256 of normalized query
+        query_text TEXT NOT NULL,
+        query_embedding vector(1024) NOT NULL,
+        result_work_ids TEXT[] NOT NULL,
+        result_scores DECIMAL(4,3)[] NOT NULL,
+        cache_created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+        cache_expires_at TIMESTAMP WITH TIME ZONE DEFAULT (NOW() + INTERVAL '1 hour'),
+        access_count INTEGER DEFAULT 1,
+        last_accessed TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+        
+        -- Constraints
+        CONSTRAINT valid_query_hash CHECK (length(query_hash) = 64),
+        CONSTRAINT valid_query_embedding CHECK (vector_dims(query_embedding) = 1024),
+        CONSTRAINT matching_arrays CHECK (array_length(result_work_ids, 1) = array_length(result_scores, 1))
+      );
+      
+      -- Indexes for performance
+      
+      -- Epic Works indexes
+      CREATE INDEX IF NOT EXISTS idx_epic_works_work_id ON epic_works(work_id);
+      CREATE INDEX IF NOT EXISTS idx_epic_works_work_type ON epic_works(work_type);
+      CREATE INDEX IF NOT EXISTS idx_epic_works_created_at ON epic_works(created_at);
+      CREATE INDEX IF NOT EXISTS idx_epic_works_updated_at ON epic_works(updated_at);
+      CREATE INDEX IF NOT EXISTS idx_epic_works_content_gin ON epic_works USING GIN(content);
+      
+      -- Work embeddings indexes (vector similarity search)
+      CREATE INDEX IF NOT EXISTS idx_work_embeddings_vector_cosine ON work_embeddings 
+      USING hnsw (embedding vector_cosine_ops) WITH (m = 16, ef_construction = 64);
+      
+      CREATE INDEX IF NOT EXISTS idx_work_embeddings_vector_l2 ON work_embeddings 
+      USING hnsw (embedding vector_l2_ops) WITH (m = 16, ef_construction = 64);
+      
+      CREATE INDEX IF NOT EXISTS idx_work_embeddings_work_id ON work_embeddings(work_id);
+      CREATE INDEX IF NOT EXISTS idx_work_embeddings_created_at ON work_embeddings(created_at);
+      
+      -- Epic Paths indexes
+      CREATE INDEX IF NOT EXISTS idx_epic_paths_path_id ON epic_paths(path_id);
+      CREATE INDEX IF NOT EXISTS idx_epic_paths_name ON epic_paths(name);
+      CREATE INDEX IF NOT EXISTS idx_epic_paths_work_ids_gin ON epic_paths USING GIN(work_ids);
+      CREATE INDEX IF NOT EXISTS idx_epic_paths_created_at ON epic_paths(created_at);
+      
+      -- TIDE Executions indexes
+      CREATE INDEX IF NOT EXISTS idx_tide_executions_execution_id ON tide_executions(execution_id);
+      CREATE INDEX IF NOT EXISTS idx_tide_executions_path_id ON tide_executions(path_id);
+      CREATE INDEX IF NOT EXISTS idx_tide_executions_status ON tide_executions(status);
+      CREATE INDEX IF NOT EXISTS idx_tide_executions_tide_number ON tide_executions(tide_number);
+      CREATE INDEX IF NOT EXISTS idx_tide_executions_started_at ON tide_executions(started_at);
+      CREATE INDEX IF NOT EXISTS idx_tide_executions_completed_at ON tide_executions(completed_at);
+      
+      -- Pattern Extractions indexes
+      CREATE INDEX IF NOT EXISTS idx_pattern_extractions_pattern_id ON pattern_extractions(pattern_id);
+      CREATE INDEX IF NOT EXISTS idx_pattern_extractions_type ON pattern_extractions(pattern_type);
+      CREATE INDEX IF NOT EXISTS idx_pattern_extractions_frequency ON pattern_extractions(frequency DESC);
+      CREATE INDEX IF NOT EXISTS idx_pattern_extractions_confidence ON pattern_extractions(confidence DESC);
+      CREATE INDEX IF NOT EXISTS idx_pattern_extractions_sources_gin ON pattern_extractions USING GIN(sources);
+      
+      -- Pattern embeddings for similarity search
+      CREATE INDEX IF NOT EXISTS idx_pattern_embeddings_vector_cosine ON pattern_extractions 
+      USING hnsw (embedding vector_cosine_ops) WITH (m = 16, ef_construction = 64)
+      WHERE embedding IS NOT NULL;
+      
+      -- Search cache indexes
+      CREATE INDEX IF NOT EXISTS idx_search_cache_query_hash ON search_cache(query_hash);
+      CREATE INDEX IF NOT EXISTS idx_search_cache_expires_at ON search_cache(cache_expires_at);
+      CREATE INDEX IF NOT EXISTS idx_search_cache_access_count ON search_cache(access_count DESC);
+      
+      -- Update triggers for updated_at timestamps
+      CREATE OR REPLACE FUNCTION update_updated_at_column()
+      RETURNS TRIGGER AS $$
+      BEGIN
+          NEW.updated_at = NOW();
+          RETURN NEW;
+      END;
+      $$ language 'plpgsql';
+      
+      CREATE TRIGGER update_epic_works_updated_at BEFORE UPDATE ON epic_works 
+      FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+      
+      CREATE TRIGGER update_epic_paths_updated_at BEFORE UPDATE ON epic_paths 
+      FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+      
+      CREATE TRIGGER update_tide_executions_updated_at BEFORE UPDATE ON tide_executions 
+      FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+      
+      -- Search cache cleanup function
+      CREATE OR REPLACE FUNCTION cleanup_expired_cache()
+      RETURNS INTEGER AS $$
+      DECLARE
+          deleted_count INTEGER;
+      BEGIN
+          DELETE FROM search_cache WHERE cache_expires_at < NOW();
+          GET DIAGNOSTICS deleted_count = ROW_COUNT;
+          RETURN deleted_count;
+      END;
+      $$ language 'plpgsql';
+      
+      -- Helper function for vector similarity search
+      CREATE OR REPLACE FUNCTION find_similar_works(
+          query_embedding vector(1024),
+          similarity_threshold DECIMAL DEFAULT 0.7,
+          max_results INTEGER DEFAULT 10
+      )
+      RETURNS TABLE(
+          work_id VARCHAR(255),
+          content JSONB,
+          similarity_score DECIMAL(4,3)
+      ) AS $$
+      BEGIN
+          RETURN QUERY
+          SELECT 
+              w.work_id,
+              w.content,
+              ROUND((1 - (e.embedding <=> query_embedding))::NUMERIC, 3) AS similarity_score
+          FROM epic_works w
+          JOIN work_embeddings e ON w.work_id = e.work_id
+          WHERE 1 - (e.embedding <=> query_embedding) > similarity_threshold
+          ORDER BY e.embedding <=> query_embedding
+          LIMIT max_results;
+      END;
+      $$ language 'plpgsql';
+    
+    env_template: |
+      # Database Configuration
+      POSTGRES_ADMIN_PASSWORD=change_me_admin_secure
+      POSTGRES_APP_PASSWORD=change_me_app_secure
+      POSTGRES_PORT=5432
+      POSTGRES_HOST=localhost
+      POSTGRES_DB=epic_tide
+      
+      # Application Database URL
+      DATABASE_URL=postgresql://epic_app:change_me_app_secure@localhost:5432/epic_tide
+      
+      # Admin Database URL (for migrations)
+      ADMIN_DATABASE_URL=postgresql://epic_admin:change_me_admin_secure@localhost:5432/epic_tide
+      
+      # Performance Settings
+      POSTGRES_MAX_CONNECTIONS=200
+      POSTGRES_SHARED_BUFFERS=256MB
+      POSTGRES_EFFECTIVE_CACHE_SIZE=1GB
+    
+    health_check_script: |
+      #!/bin/bash
+      # health-check.sh
+      # PostgreSQL health check script
+      
+      set -e
+      
+      # Configuration
+      DB_HOST="${POSTGRES_HOST:-localhost}"
+      DB_PORT="${POSTGRES_PORT:-5432}"
+      DB_NAME="${POSTGRES_DB:-epic_tide}"
+      DB_USER="${DB_USER:-epic_app}"
+      
+      echo "Checking PostgreSQL health..."
+      
+      # Check if PostgreSQL is accepting connections
+      echo "1. Checking connection..."
+      pg_isready -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME"
+      
+      # Check if pgvector extension is loaded
+      echo "2. Checking pgvector extension..."
+      psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" -c "SELECT * FROM pg_extension WHERE extname='vector';" | grep -q vector
+      echo "pgvector extension: OK"
+      
+      # Check if required tables exist
+      echo "3. Checking required tables..."
+      REQUIRED_TABLES=("epic_works" "work_embeddings" "epic_paths" "tide_executions")
+      
+      for table in "${REQUIRED_TABLES[@]}"; do
+          psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" -c "SELECT 1 FROM $table LIMIT 1;" > /dev/null 2>&1
+          echo "Table $table: OK"
+      done
+      
+      # Check vector index performance
+      echo "4. Checking vector index performance..."
+      QUERY_TIME=$(psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" -t -c "
+      EXPLAIN (ANALYZE, BUFFERS) 
+      SELECT work_id FROM work_embeddings 
+      ORDER BY embedding <=> '[0,1,2,3]'::vector 
+      LIMIT 1;" 2>&1 | grep "Execution Time" | grep -o '[0-9]*\.[0-9]*' || echo "0")
+      
+      echo "Sample vector query time: ${QUERY_TIME}ms"
+      
+      # Check database statistics
+      echo "5. Database statistics..."
+      psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" -c "
+      SELECT 
+          schemaname,
+          tablename,
+          n_tup_ins as inserts,
+          n_tup_upd as updates,
+          n_tup_del as deletes
+      FROM pg_stat_user_tables 
+      WHERE schemaname = 'public';"
+      
+      echo "PostgreSQL health check completed successfully!"
+    
+    performance_test: |
+      -- performance-test.sql
+      -- Performance testing queries for PostgreSQL+pgvector
+      
+      -- Test 1: Basic vector similarity search
+      \timing on
+      
+      EXPLAIN (ANALYZE, BUFFERS)
+      SELECT 
+          work_id,
+          1 - (embedding <=> '[0.1,0.2,0.3]'::vector) as similarity
+      FROM work_embeddings
+      ORDER BY embedding <=> '[0.1,0.2,0.3]'::vector
+      LIMIT 10;
+      
+      -- Test 2: Vector search with content join
+      EXPLAIN (ANALYZE, BUFFERS)
+      SELECT 
+          w.work_id,
+          w.content->>'what' as description,
+          1 - (e.embedding <=> '[0.1,0.2,0.3]'::vector) as similarity
+      FROM epic_works w
+      JOIN work_embeddings e ON w.work_id = e.work_id
+      WHERE 1 - (e.embedding <=> '[0.1,0.2,0.3]'::vector) > 0.7
+      ORDER BY e.embedding <=> '[0.1,0.2,0.3]'::vector
+      LIMIT 10;
+      
+      -- Test 3: Complex query with filters
+      EXPLAIN (ANALYZE, BUFFERS)
+      SELECT 
+          w.work_id,
+          w.content,
+          1 - (e.embedding <=> '[0.1,0.2,0.3]'::vector) as similarity
+      FROM epic_works w
+      JOIN work_embeddings e ON w.work_id = e.work_id
+      WHERE 
+          w.created_at > NOW() - INTERVAL '30 days'
+          AND w.work_type = 'implementation'
+          AND 1 - (e.embedding <=> '[0.1,0.2,0.3]'::vector) > 0.6
+      ORDER BY e.embedding <=> '[0.1,0.2,0.3]'::vector
+      LIMIT 20;
+      
+      -- Test 4: Using helper function
+      SELECT * FROM find_similar_works('[0.1,0.2,0.3]'::vector, 0.7, 5);
+      
+      -- Index usage statistics
+      SELECT 
+          indexrelname as index_name,
+          idx_tup_read,
+          idx_tup_fetch,
+          idx_scan
+      FROM pg_stat_user_indexes 
+      WHERE schemaname = 'public' 
+      AND indexrelname LIKE '%vector%';
+      
+      \timing off
+    
+    commands: |
+      # Start PostgreSQL with pgvector
+      docker-compose -f docker-compose.postgres.yml up -d
+      
+      # Wait for PostgreSQL to be ready
+      docker exec epic-postgres pg_isready -U epic_admin -d epic_tide
+      
+      # Verify pgvector extension
+      docker exec -it epic-postgres psql -U epic_admin -d epic_tide -c "SELECT * FROM pg_extension WHERE extname='vector';"
+      
+      # Check table creation
+      docker exec -it epic-postgres psql -U epic_admin -d epic_tide -c "\dt"
+      
+      # Test vector operations
+      docker exec -it epic-postgres psql -U epic_admin -d epic_tide -c "
+      INSERT INTO epic_works (work_id, content) VALUES ('test-1', '{\"type\": \"test\", \"what\": \"test work\"}');
+      INSERT INTO work_embeddings (work_id, embedding) VALUES ('test-1', ARRAY[0.1,0.2,0.3,0.4]::REAL[]);
+      SELECT work_id, vector_dims(embedding) FROM work_embeddings;
+      "
+      
+      # Run performance tests
+      docker exec -it epic-postgres psql -U epic_app -d epic_tide -f /performance-test.sql
+      
+      # Check database health
+      chmod +x health-check.sh
+      ./health-check.sh
+      
+      # Monitor database performance
+      docker exec -it epic-postgres psql -U epic_admin -d epic_tide -c "
+      SELECT 
+          datname,
+          numbackends as connections,
+          xact_commit as transactions,
+          blks_read,
+          blks_hit,
+          round(blks_hit*100.0/(blks_hit+blks_read), 2) as cache_hit_ratio
+      FROM pg_stat_database 
+      WHERE datname = 'epic_tide';"
+      
+      # Backup database
+      docker exec epic-postgres pg_dump -U epic_admin -d epic_tide > epic_tide_backup.sql
+      
+      # Clean up expired cache entries
+      docker exec -it epic-postgres psql -U epic_app -d epic_tide -c "SELECT cleanup_expired_cache();"
+      
+      # View vector index statistics
+      docker exec -it epic-postgres psql -U epic_app -d epic_tide -c "
+      SELECT 
+          schemaname,
+          tablename,
+          indexname,
+          idx_scan,
+          idx_tup_read,
+          idx_tup_fetch
+      FROM pg_stat_user_indexes 
+      WHERE indexname LIKE '%vector%';"

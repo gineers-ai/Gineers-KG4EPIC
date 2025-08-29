@@ -1,0 +1,146 @@
+# PATH: Pattern Extraction Pipeline
+# Automatically extract patterns from completed TIDEs
+
+PATH:
+  id: pattern-extraction
+  what: "Build automatic pattern discovery from TIDE executions"
+  version: 1.0
+  phase_id: phase_2_enhanced
+  
+  # PROJECT CONTEXT
+  project:
+    root: /Users/inseokseo/Gineers-Projects/Gineers-KG4EPIC
+    type: "Intelligence layer for EPIC-TIDE methodology"
+    status: "Ready after multi-tier-embeddings PATH"
+    
+  # CRITICAL DECISIONS
+  decisions:
+    extraction_approach: |
+      - Analyze TIDE learnings and troubleshooting
+      - Identify recurring solutions across TIDEs
+      - Use embeddings to find similar patterns
+      - Store in patterns table with evidence
+      
+    pattern_types: |
+      - Technical: Code solutions, architecture decisions
+      - Process: Workflow improvements, methodology insights
+      - Business: Value discoveries, metric improvements
+      
+    quality_control: |
+      - Minimum 2 TIDEs for pattern validation
+      - Reusability score based on applicability
+      - Evidence links to source TIDEs
+      - Manual review option
+      
+  # EVIDENCE REQUIRED
+  evidence_required:
+    extraction:
+      - "Pattern extraction algorithm implemented"
+      - "Patterns identified from existing TIDEs"
+      - "Pattern storage in database working"
+      
+    quality:
+      - "Patterns have clear problem-solution pairs"
+      - "Reusability scores assigned correctly"
+      - "Evidence traceable to source TIDEs"
+      
+    search:
+      - "Pattern search by similarity working"
+      - "Pattern categorization functional"
+      - "Pattern API endpoints operational"
+      
+  # EXECUTION SEQUENCE
+  works:
+    - ../../../works/design-pattern-extraction-algorithm.yml
+    - ../../../works/implement-pattern-pipeline.yml
+    - ../../../works/create-pattern-api-endpoints.yml
+    - ../../../works/test-pattern-extraction.yml
+    
+  # SUCCESS METRICS
+  metrics:
+    discovery:
+      - "5+ patterns extracted from existing TIDEs"
+      - "Pattern categories properly assigned"
+      - "Evidence links verified"
+      
+    quality:
+      - "80%+ extracted patterns are valid"
+      - "Patterns improve work execution"
+      - "Reusability demonstrated"
+      
+    automation:
+      - "Patterns extracted within 1 minute of TIDE completion"
+      - "No manual intervention required"
+      - "Quality threshold filtering working"
+      
+  # PATTERN EXTRACTION ALGORITHM
+  algorithm:
+    step_1: |
+      Collect completed TIDEs with learnings
+      Focus on: troubleshooting, decisions, learnings
+      
+    step_2: |
+      Generate embeddings for TIDE content
+      Use ada-002 for semantic understanding
+      
+    step_3: |
+      Cluster similar learnings across TIDEs
+      Similarity threshold: >0.85
+      
+    step_4: |
+      Extract common problem-solution pairs
+      Validate with evidence from multiple TIDEs
+      
+    step_5: |
+      Assign categories and reusability scores
+      Store in patterns table with metadata
+      
+  # RISK MITIGATION
+  risks:
+    noise:
+      risk: "Too many low-quality patterns"
+      mitigation: "Strict similarity thresholds"
+      validation: "Require multiple TIDE evidence"
+      
+    complexity:
+      risk: "Pattern extraction too complex"
+      mitigation: "Start with simple heuristics"
+      evolution: "Improve algorithm over time"
+      
+  # LEARNINGS TO APPLY
+  from_epic_tide:
+    - "Evidence-driven validation of patterns"
+    - "Progressive refinement through TIDEs"
+    - "Reusability as key metric"
+    
+  # COORDINATION
+  coordination:
+    prerequisite: "multi-tier-embeddings PATH complete"
+    enables: "PHASE_3 knowledge graph features"
+    parallel: "Can run with testing-debt-resolution"
+    
+  # SESSION GUIDANCE
+  for_new_session: |
+    1. Review existing TIDE executions for patterns
+    2. Identify 3-5 obvious patterns manually first
+    3. Build extraction algorithm to find these
+    4. Expand to discover new patterns
+    5. Validate with evidence
+    6. Create pattern search functionality
+    
+  # EXAMPLE PATTERNS TO EXTRACT
+  expected_patterns:
+    - pattern: "Python microservice for complex libraries"
+      source: "TIDE_2 embeddings solution"
+      problem: "Node.js compatibility issues"
+      solution: "Separate Python service"
+      
+    - pattern: "Evidence-driven validation"
+      source: "Multiple TIDEs"
+      problem: "Premature completion claims"
+      solution: "Require verifiable evidence"
+      
+    - pattern: "Health checks for containers"
+      source: "Docker implementation TIDEs"
+      problem: "Service dependency failures"
+      solution: "Implement health checks"
