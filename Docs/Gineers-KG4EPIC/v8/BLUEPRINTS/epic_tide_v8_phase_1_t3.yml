@@ -1,0 +1,236 @@
+# BLUEPRINT: EPIC-TIDE v8 Implementation - PHASE 1 (Fresh Start)
+# Third attempt (t3) with v8-compliant architecture
+# Human-authored vision, AI-generated works
+
+BLUEPRINT:
+  # === METADATA ===
+  slug: "kg4epic-v8-phase1-t3"
+  name: "KG4EPIC v8 Foundation - Third Attempt"
+  
+  # === PHASE MANAGEMENT ===
+  phase:
+    number: 1
+    previous_phase_slug: null  # Fresh start
+    goal_change: false
+  
+  # === HUMAN SECTION (Vision & Goals) ===
+  vision: |
+    Build a v8-compliant passive document store for EPIC-TIDE methodology.
+    This is a fresh start keeping only proven infrastructure (Docker, embeddings services).
+    Focus on correct implementation of v8 schema and workflow from the beginning.
+    
+    We need a system where:
+    - Humans write BLUEPRINTs in YAML with clear vision
+    - AI translates them to semantic format for execution
+    - Evidence drives all progress (no time-based metrics)
+    - Clear CONFIRM gateway establishes AI autonomy boundaries
+    - Proper embedding strategy (light fields with E5, heavy content with Ada-002)
+  
+  goals:
+    - "Implement v8-compliant database schema (blueprints, semantic_executions, evidence)"
+    - "Create TRANSLATOR service for BLUEPRINT→semantic conversion"
+    - "Establish CONFIRM gateway for human→AI handoff"
+    - "Deploy correct embedding strategy (E5 for metadata, Ada-002 for content)"
+    - "Build evidence recording system with dual format"
+  
+  # === AI SECTION (Technical Interpretation) ===
+  scope: |
+    Technical implementation of EPIC-TIDE v8 architecture with:
+    - PostgreSQL database with v8 schema (5 core tables)
+    - TRANSLATOR service to convert YAML blueprints to semantic executions
+    - CONFIRM gateway API for human confirmation and blueprint locking
+    - Proper embedding strategy: E5 for light text, Ada-002 for documents
+    - Evidence recording with AI storage and human report generation
+    - Clean separation between human-authored and AI-consumed content
+  
+  constraints:
+    technical:
+      database: "PostgreSQL 15 with pgvector extension"
+      schema: "v8 schema from FOUNDATION_DATASET_v8.sql"
+      deployment: "Docker Compose with 5+ containers"
+      api_style: "Single /api/tool endpoint for MCP compatibility"
+      embeddings:
+        light: "E5-large-v2 (1024d) for names, tags, summaries"
+        heavy: "text-embedding-ada-002 (1536d) for full content"
+      mcp_requirements:
+        endpoint: "/api/tool (POST only)"
+        request_format: '{"tool": "tool-name", "arguments": {...}}'
+        response_format: '{"success": bool, "result": {"content": [...]}}'
+        tools_prefix: "blueprint-, execution-, evidence-, pattern-"
+    
+    resources:
+      existing:
+        - "Docker Compose infrastructure"
+        - "E5 embeddings service (port 8000)"
+        - "Ada-002 embeddings service (port 8001)"
+        - "PostgreSQL with pgvector"
+      needed:
+        - "TRANSLATOR service"
+        - "CONFIRM gateway"
+        - "Evidence recorder"
+      
+    boundaries:
+      must_not_change:
+        - "v8 schema structure"
+        - "BLUEPRINT→CONFIRM→EXECUTION flow"
+        - "Embedding model choices"
+      can_adapt:
+        - "API endpoint naming"
+        - "Service implementation language"
+        - "UI/reporting formats"
+  
+  works:
+    # === DATABASE FOUNDATION ===
+    
+    drop_legacy_schema:
+      purpose: "Remove old v5.1 tables to start fresh"
+      verification:
+        - "Old tables (phases, paths, tides, works) dropped"
+        - "pgvector extension preserved"
+        - "Database backup created if needed"
+    
+    implement_v8_schema:
+      purpose: "Create v8-compliant database tables"
+      verification:
+        - "blueprints table with slug/name/yaml_content"
+        - "semantic_executions table with embeddings"
+        - "confirmation_records table for audit"
+        - "evidence_records table with dual format"
+        - "patterns table for ML format"
+    
+    # === TRANSLATOR SERVICE ===
+    
+    create_translator_service:
+      purpose: "Build service to convert BLUEPRINT YAML to semantic format"
+      verification:
+        - "Parses YAML blueprints correctly"
+        - "Generates semantic_summary from scope"
+        - "Extracts semantic_tags from content"
+        - "Creates work_atoms from works section"
+    
+    implement_semantic_generation:
+      purpose: "Generate semantic fields and embeddings"
+      verification:
+        - "Creates embedding_summary with Ada-002"
+        - "Creates embedding_full for complete content"
+        - "Stores in semantic_executions table"
+        - "Links to source blueprint"
+    
+    # === CONFIRM GATEWAY ===
+    
+    build_confirm_api:
+      purpose: "Create confirmation endpoint for human handoff"
+      verification:
+        - "POST /v8/confirm/{blueprint_id} works"
+        - "Locks blueprint (immutable after confirm)"
+        - "Creates confirmation_record"
+        - "Triggers TRANSLATOR automatically"
+    
+    implement_lock_mechanism:
+      purpose: "Ensure blueprints cannot change after confirmation"
+      verification:
+        - "Blueprint.locked flag set to true"
+        - "SHA-256 hash stored for integrity"
+        - "API rejects modifications to locked blueprints"
+        - "Clear error messages for attempts"
+    
+    # === EMBEDDING STRATEGY ===
+    
+    configure_light_embeddings:
+      purpose: "Set up E5 embeddings for metadata fields"
+      verification:
+        - "blueprint.name → name_embedding_e5"
+        - "semantic_tags[] → tags_embedding_e5"
+        - "Fast search on light fields works"
+    
+    configure_heavy_embeddings:
+      purpose: "Set up Ada-002 for document content"
+      verification:
+        - "yaml_content → embedding_full"
+        - "semantic_summary → embedding_summary"
+        - "Semantic search on content works"
+    
+    # === EVIDENCE SYSTEM ===
+    
+    create_evidence_recorder:
+      purpose: "Build API for AI to submit evidence"
+      verification:
+        - "POST /v8/evidence/record works"
+        - "Stores structured evidence in database"
+        - "Links to execution and work_key"
+        - "Supports artifact URLs"
+    
+    implement_report_generator:
+      purpose: "Generate human-readable reports from evidence"
+      verification:
+        - "GET /v8/evidence/report/{execution_id}"
+        - "Markdown format with clear sections"
+        - "Includes verification results"
+        - "Shows progress metrics"
+    
+    # === INTEGRATION ===
+    
+    update_docker_compose:
+      purpose: "Add new services to Docker stack"
+      verification:
+        - "translator service container added"
+        - "All services communicate correctly"
+        - "Health checks for new services"
+        - "Proper network configuration"
+    
+    create_v8_api_routes:
+      purpose: "Implement all v8 workflow endpoints"
+      verification:
+        - "/v8/blueprint/submit - accepts YAML"
+        - "/v8/confirm/{id} - locks and triggers translation"
+        - "/v8/execution/status - shows AI progress"
+        - "/v8/evidence/* - evidence management"
+    
+    # === VALIDATION ===
+    
+    test_complete_workflow:
+      purpose: "Validate entire v8 flow end-to-end"
+      verification:
+        - "Submit sample blueprint"
+        - "Confirm and lock it"
+        - "TRANSLATOR creates semantic execution"
+        - "Evidence can be recorded"
+        - "Reports generate correctly"
+    
+    verify_embedding_search:
+      purpose: "Ensure semantic search works correctly"
+      verification:
+        - "Light field search with E5 is fast"
+        - "Content search with Ada-002 is accurate"
+        - "Combined search strategies work"
+        - "Performance meets requirements"
+  
+  success_criteria:
+    - "v8 schema fully implemented and validated"
+    - "Complete BLUEPRINT→CONFIRM→EXECUTION flow working"
+    - "TRANSLATOR service operational"
+    - "Proper embedding strategy (E5 for light, Ada-002 for heavy)"
+    - "Evidence recording and reporting functional"
+    - "All v8 endpoints tested and documented"
+    - "Clean separation of human/AI concerns"
+  
+  evidence_required:
+    - "Database schema migration screenshots"
+    - "API endpoint test results"
+    - "TRANSLATOR service logs showing conversion"
+    - "Confirmation record in database"
+    - "Semantic execution with embeddings"
+    - "Evidence records with artifacts"
+    - "Generated human report sample"
+    - "Docker compose ps showing all services"
+    - "Semantic search query results"
+  
+  # === METADATA FOR AI ===
+  for_ai: |
+    This is a fresh start (t3 = third attempt) to properly implement v8.
+    Previous attempts (t1, t2) had schema misalignment issues.
+    Keep existing Docker infrastructure but replace entire database schema.
+    Focus on clean v8 implementation without legacy baggage.
+    Use existing E5 and Ada-002 services but with correct field mapping.
+    TRANSLATOR can be Python (FastAPI) or Node.js (Express).
+    Evidence recorder should support both structured data and file artifacts.

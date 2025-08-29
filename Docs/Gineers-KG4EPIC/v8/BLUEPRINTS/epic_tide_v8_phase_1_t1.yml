@@ -59,6 +59,16 @@ BLUEPRINT:
       can_adapt: ["implementation details", "service ports", "testing approach"]
   
   works:
+    implement_mcp_gateway:
+      purpose: "Create single /api/tool endpoint for MCP"
+      prerequisites: []
+      verification:
+        - "POST /api/tool endpoint responds"
+        - "Request format {tool, arguments} accepted"
+        - "Response format {success, result/error} returned"
+        - "Content array structure working"
+      adaptable: false  # Must follow MCP contract exactly
+    
     deploy_v8_schema:
       purpose: "Create database with v8 tables"
       prerequisites: []
@@ -123,14 +133,25 @@ BLUEPRINT:
         - "Patterns searchable for future use"
       adaptable: true
     
-    build_v8_api:
-      purpose: "Complete v8 API with all endpoints"
-      prerequisites: ["implement_blueprint_storage", "create_confirm_gateway"]
+    implement_mcp_tools:
+      purpose: "Implement MCP tool operations through gateway"
+      prerequisites: ["implement_mcp_gateway", "deploy_v8_schema"]
       verification:
-        - "POST /v8/blueprints - Create blueprint"
-        - "POST /v8/confirm - CONFIRM gateway"
-        - "POST /v8/search - Semantic search"
-        - "POST /v8/evidence - Retrieve evidence"
+        - "blueprint-create tool working"
+        - "blueprint-confirm tool triggers CONFIRM gateway"
+        - "execution-create tool creates semantic execution"
+        - "pattern-search tool performs semantic search"
+        - "All tools follow MCP contract format"
+      adaptable: false  # Must match MCP tool names exactly
+    
+    build_v8_api:
+      purpose: "Complete v8 API with MCP-compatible endpoints"
+      prerequisites: ["implement_mcp_tools", "create_confirm_gateway"]
+      verification:
+        - "All MCP tools routed through /api/tool"
+        - "CONFIRM gateway accessible via tool"
+        - "Semantic search working"
+        - "Evidence retrieval functional"
       adaptable: true
     
     create_integration_tests:
@@ -202,16 +223,24 @@ BLUEPRINT:
   # === AI EXECUTION INSTRUCTIONS ===
   for_ai: |
     Priority order:
-    1. Database schema first (foundation)
-    2. CONFIRM gateway (core innovation)
-    3. Semantic layer (AI optimization)
-    4. Terminal events (monitoring)
-    5. Everything else builds on these
+    1. MCP gateway first (required for all operations)
+    2. Database schema (foundation)
+    3. CONFIRM gateway (core innovation)
+    4. Semantic layer (AI optimization)
+    5. Terminal events (monitoring)
+    6. Everything else builds on these
     
     Critical success factors:
+    - MCP contract MUST be followed exactly (see API_CONTRACT_REQUEST_FOR_MCP.md)
     - CONFIRM must truly lock blueprints
     - Semantic must preserve all YAML information
     - Events must be parseable by ACC
+    
+    MCP Integration Notes:
+    - Single endpoint /api/tool for everything
+    - Request: {tool: "name", arguments: {...}}
+    - Response: {success: true/false, result/error: ...}
+    - Content must be in array format
     
     Known considerations:
     - Use existing E5 and ada-002 services

@@ -1,0 +1,217 @@
+# BLUEPRINT: EPIC-TIDE v8 Foundation Implementation (Terminal 2)
+# Human vision with AI-generated works after CONFIRM
+# Fresh start with proper v8 architecture
+
+BLUEPRINT:
+  # === METADATA ===
+  slug: "epic-tide-v8-phase-1-t2"  # t2 = Terminal 2 execution
+  name: "EPIC-TIDE v8 Foundation - Fresh Start"
+  
+  # === PHASE MANAGEMENT ===
+  phase:
+    number: 1  # Fresh Phase 1 with v8
+    previous_phase_slug: null  # Fresh start, no previous
+    goal_change: false  # New beginning, not a change
+  
+  # === HUMAN SECTION (Vision & Goals) ===
+  vision: |
+    Create a clean, correct implementation of KG4EPIC using EPIC-TIDE v8 architecture.
+    This fresh start will properly demonstrate the CONFIRM gateway, autonomous AI execution,
+    and the simplified 3-document model (BLUEPRINT → EXECUTION → PATTERN).
+    
+    We're building the foundation that actually dogfoods v8 principles, not retrofitting
+    old v5.1 concepts. The system will show clear human-AI boundaries through the CONFIRM
+    gateway and enable AI to autonomously retry within TIDEs without human intervention.
+    
+    Key focus: Simplicity, correctness, and true v8 alignment.
+  
+  goals:
+    - "Deploy fresh v8 database schema with proper tables (blueprints, semantic_executions, etc.)"
+    - "Implement CONFIRM gateway for explicit human-AI handoff with blueprint locking"
+    - "Create blueprint management API with YAML storage and semantic translation"
+    - "Enable autonomous AI execution within TIDEs (multiple attempts, no human intervention)"
+    - "Integrate existing embedding services (E5 and ada-002) with new v8 structure"
+    - "Demonstrate evidence-driven progress tracking without time-based metrics"
+  
+  # === AI SECTION (Generated from Vision) ===
+  # NOTE: AI will expand this section after CONFIRM
+  
+  scope: |
+    Technical implementation of EPIC-TIDE v8 storage and execution system.
+    Focus on core v8 tables, CONFIRM mechanism, and autonomous execution engine.
+    Leverage existing Docker infrastructure and embedding services.
+    Create clear API boundaries between human-authored blueprints and AI executions.
+  
+  constraints:
+    technical:
+      database: "PostgreSQL 15 with pgvector (fresh epic_tide_v8 database)"
+      existing_services:
+        embeddings_e5: "Port 8000 - E5-large-v2 (1024 dims) - KEEP AS IS"
+        embeddings_ada002: "Port 8001 - text-embedding-ada-002 (1536 dims) - KEEP AS IS"
+        postgres: "Port 5432 - PostgreSQL container - KEEP AS IS"
+      new_api: "Node.js with TypeScript (fresh codebase for v8)"
+      storage: "YAML files for blueprints, PostgreSQL for executions"
+      mcp_integration:
+        endpoint: "Single /api/tool gateway for all MCP operations"
+        format: "Strict request/response format per MCP contract"
+        tools: "Support both v8 operations AND legacy tool names for MCP"
+    
+    resources:
+      reusable:
+        - "Docker compose infrastructure"
+        - "Embedding services (both E5 and ada-002)"
+        - "PostgreSQL container"
+        - "Learned patterns from v5.1 journey"
+      must_rebuild:
+        - "Database schema (v8 tables)"
+        - "API endpoints (v8 structure)"
+        - "Execution engine"
+        - "CONFIRM gateway"
+    
+    boundaries:
+      must_not_change:
+        - "Embedding service ports (8000, 8001)"
+        - "PostgreSQL port (5432)"
+        - "Docker container names"
+      can_adapt:
+        - "API structure (complete freedom for v8)"
+        - "Database schema (fresh start)"
+        - "Execution flow"
+  
+  # === WORKS (AI generates detailed steps) ===
+  works:
+    # Foundation Setup
+    deploy_v8_database:
+      purpose: "Create fresh database with v8 schema"
+      verification:
+        - "Database epic_tide_v8 created"
+        - "5 v8 tables deployed (blueprints, semantic_executions, etc.)"
+        - "Vector columns configured for both E5 (1024) and ada-002 (1536)"
+        - "All indexes created"
+    
+    implement_mcp_gateway:
+      purpose: "Create /api/tool endpoint for MCP server integration"
+      verification:
+        - "POST /api/tool endpoint responds correctly"
+        - "Request format {tool, arguments} accepted"
+        - "Response format {success, result/error} returned"
+        - "All required MCP tools mapped to internal functions"
+        - "Error handling returns proper error codes"
+    
+    create_project_structure:
+      purpose: "Set up clean v8 project structure"
+      verification:
+        - "blueprints/ directory for YAML storage"
+        - "api/v8/ directory for new API"
+        - "Separate concerns clearly"
+    
+    # CONFIRM Gateway Implementation
+    implement_confirm_gateway:
+      purpose: "Create the core v8 innovation - CONFIRM gateway"
+      verification:
+        - "POST /api/v8/confirm/lock endpoint works"
+        - "Blueprint becomes immutable after CONFIRM"
+        - "Confirmation record created with audit trail"
+        - "Lock hash prevents modifications"
+    
+    create_blueprint_api:
+      purpose: "Human-facing blueprint management with MCP support"
+      verification:
+        - "POST /api/v8/blueprint/create accepts YAML"
+        - "GET /api/v8/blueprint/{slug} returns YAML"
+        - "POST /api/v8/blueprint/translate generates semantic version"
+        - "Blueprints stored as files AND in database"
+        - "MCP tool 'blueprint-create' works through /api/tool"
+        - "MCP tool 'blueprint-list' returns formatted text"
+    
+    # AI Execution Engine
+    build_semantic_translator:
+      purpose: "Convert human YAML to AI-optimized format"
+      verification:
+        - "Extracts semantic summary from vision"
+        - "Generates semantic tags"
+        - "Creates work atoms from works"
+        - "Produces embeddings using existing services"
+    
+    implement_execution_engine:
+      purpose: "Autonomous AI execution within TIDEs"
+      verification:
+        - "POST /api/v8/execution/start begins TIDE"
+        - "AI can retry within same TIDE autonomously"
+        - "No human intervention during execution"
+        - "Evidence collected automatically"
+    
+    # Evidence Collection
+    create_evidence_system:
+      purpose: "Dual-format evidence storage"
+      verification:
+        - "Evidence stored in database (AI format)"
+        - "GET /api/v8/evidence/report generates human markdown"
+        - "Evidence linked to specific works"
+        - "Verification results tracked"
+    
+    # Integration
+    integrate_embedding_services:
+      purpose: "Connect existing embedding services to v8"
+      verification:
+        - "Both E5 and ada-002 services connected"
+        - "Dual embeddings generated for all content"
+        - "Semantic search using both embedding types"
+        - "No changes to embedding services themselves"
+    
+    # Testing & Validation
+    validate_v8_flow:
+      purpose: "End-to-end test of v8 architecture"
+      verification:
+        - "Create blueprint → Confirm → Execute → Evidence flow works"
+        - "TIDE autonomous retry demonstrated"
+        - "No human intervention after CONFIRM"
+        - "Evidence properly collected"
+  
+  # === SUCCESS CRITERIA ===
+  success_criteria:
+    - "v8 database schema fully deployed and verified"
+    - "CONFIRM gateway locks blueprints successfully"
+    - "AI executes autonomously within TIDEs"
+    - "Evidence collection works in dual format"
+    - "Existing embedding services integrated"
+    - "Clear human-AI boundary established"
+    - "No remnants of v5.1 structure"
+  
+  # === EVIDENCE REQUIRED ===
+  evidence_required:
+    - "Screenshot of v8 tables in database"
+    - "API test showing CONFIRM lock working"
+    - "Log of autonomous TIDE execution"
+    - "Evidence report in both AI and human formats"
+    - "Semantic search results using dual embeddings"
+    - "Complete v8 flow from blueprint to evidence"
+  
+  # === FOR AI AFTER CONFIRM ===
+  for_ai: |
+    After human CONFIRMS this blueprint:
+    1. This becomes immutable - no changes allowed
+    2. You have full autonomy within TIDEs
+    3. You can retry/adapt within same goal
+    4. Collect evidence for all verifications
+    5. Report evidence in dual format
+    6. If goal change needed, request new PHASE
+    
+    Remember: This is a FRESH START. Do not reference or migrate
+    anything from the old v5.1 structure. Build clean v8 from scratch.
+    
+  # === HUMAN NOTES ===
+  human_notes: |
+    - This is Terminal 2 (t2) execution - developer perspective
+    - Fresh start approved after v8 alignment assessment
+    - Keep Docker infrastructure and embedding services
+    - Everything else is fresh implementation
+    - Focus on simplicity and correctness over features
+    - True dogfooding of v8 principles is the goal
+
+# === CONFIRMATION GATE ===
+# After human reviews and confirms this blueprint:
+# - It becomes locked (immutable)
+# - AI gets full autonomy for execution
+# - Multiple TIDE attempts allowed
+# - No human intervention until phase complete
