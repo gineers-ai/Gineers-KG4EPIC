@@ -1,4 +1,4 @@
-# EPIC-TIDE v6: A Human-Readable Commentary
+# EPIC-TIDE v6 to v8: A Human-Readable Commentary
 
 ## The Journey to Radical Simplification
 
@@ -6,7 +6,7 @@
 
 Imagine you're trying to build a house. Traditional methodologies gave you blueprints, schedules, Gantt charts, resource allocations, budget spreadsheets, risk matrices, and 47 different documents to track everything. You spent more time managing the documents than building the house.
 
-EPIC-TIDE v6 solves this with radical simplification: just three document types that capture everything that matters. Like having one recipe book, one cooking log, and one collection of proven techniques. No organizational theater, no folder archaeology, no document hunting - just Plan, Do, and Learn.
+EPIC-TIDE (starting with v6) solves this with radical simplification: just three document types that capture everything that matters. Like having one recipe book, one cooking log, and one collection of proven techniques. No organizational theater, no folder archaeology, no document hunting - just Plan, Do, and Learn.
 
 The revelation: **Keep only what directly contributes to getting work done.**
 
