@@ -380,16 +380,22 @@ C -> U : "What constraints, tech stack, and core features?"
 C -> M : Retrieve relevant patterns
 M -> G : Query API for similar projects
 G -> M : Return patterns (0 or many)
-C -> U : Propose BLUEPRINT based on patterns
+C -> U : Propose BLUEPRINT (based on patterns or without patterns)
 U -> C : "CONFIRM" 
+C -> M -> G : Save BLUEPRINT (locked, immutable)
 C      : Translate to AI-centric execution.yml
-C      : Start autonomous TIDE execution
-A      : Detect new execution (monitoring terminal)
+C -> M -> G : Save EXECUTION (status: in_progress)
+C      : [EPIC-TIDE:TIDE:1:START] - full autonomous mode
+A      : Detect execution start (monitoring terminal)
 C      : Emit structured status updates
 A      : Parse terminal output, track progress
-C      : Complete TIDE (success or failure)
+C      : [EPIC-TIDE:TIDE:1:COMPLETE]
+C -> M -> G : Update EXECUTION with evidence (status: success/failed)
 A -> U : Alert completion status
 U -> C : Approve success OR request new PHASE
+
+After success (async):
+G      : Extract patterns from successful execution (background process)
 ```
 
 ### Terminal as Event Bus
