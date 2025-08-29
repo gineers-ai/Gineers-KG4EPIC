@@ -181,6 +181,52 @@ EPIC-TIDE v8 is software development stripped to its essence:
 
 It's not dumbing down. It's smarting up by removing everything that doesn't directly contribute to building working software.
 
+## How the System Actually Works: The Orchestra
+
+Behind the scenes, EPIC-TIDE v8 uses several components working together like an orchestra:
+
+### The Players
+
+- **Claude Code (C)**: The lead performer - the AI doing the actual work
+- **MCP Tool Server (M)**: The librarian - fetches patterns and knowledge when needed
+- **Gineers-KG (G)**: The library - stores all blueprints, executions, and patterns
+- **Gineers-ACC (A)**: The conductor - monitors everything and coordinates multiple AI sessions
+
+### The Communication: Terminal as Event Bus
+
+Here's the clever part: The AI communicates through structured terminal output, like a radio broadcast:
+
+```bash
+[EPIC-TIDE:BLUEPRINT:READY:blog-system]
+[EPIC-TIDE:CONFIRM:RECEIVED:2024-01-29]
+[EPIC-TIDE:TIDE:1:START]
+[EPIC-TIDE:WORK:database:COMPLETE]
+[EPIC-TIDE:TIDE:1:SUCCESS]
+```
+
+ACC watches these broadcasts and can:
+- Alert you when something important happens
+- Start new AI sessions for parallel work
+- Inject commands if coordination is needed
+
+Think of it like air traffic control - planes (AI actors) broadcast their status, and the tower (ACC) ensures everything runs smoothly without collisions.
+
+### A Real Example Flow
+
+```
+You: "Build me a blog"
+Claude: "Let me check our pattern library..." 
+        → asks MCP → MCP queries Gineers-KG → returns similar projects
+Claude: "Based on patterns, here's my BLUEPRINT..."
+You: "CONFIRM"
+Claude: [EPIC-TIDE:TIDE:1:START] *begins building autonomously*
+ACC: *monitoring* "Claude is working on database setup"
+Claude: [EPIC-TIDE:TIDE:1:SUCCESS]
+ACC: *alerts you* "Blog system complete!"
+```
+
+The beauty? You only interact at the beginning (BLUEPRINT) and end (EVIDENCE). Everything else happens automatically.
+
 ## A Final Metaphor
 
 EPIC-TIDE v8 is like hiring a master craftsman:
