@@ -1,0 +1,70 @@
+# EXECUTION Template (v6)
+# Copy this to execution_1.yml, execution_2.yml, etc.
+# See EXECUTION_GUIDE.md for detailed instructions
+
+EXECUTION:
+  # IDENTIFICATION
+  id: "execution_[number]"
+  blueprint_ref: "[blueprint_id from BLUEPRINTS/]"
+  attempt: 1  # Increment for each new execution
+  # previous: "execution_[n-1]"  # Uncomment for attempt 2+
+  
+  # TRACKING
+  started: "[ISO timestamp]"
+  status: "in_progress"  # in_progress|success|partial|failed
+  
+  # WORK ATTEMPTS - Copy work names from BLUEPRINT.works
+  attempts:
+    # Replace with actual work names from your BLUEPRINT
+    work_name_1:
+      status: "not_started"  # not_started|in_progress|complete|failed|blocked
+      
+      # actions:  # Uncomment when you start work
+      #   - "What you did"
+      
+      # artifacts:  # REQUIRED for status: complete
+      #   - "path/to/file"
+      
+      # error: "What went wrong"  # REQUIRED for status: failed
+      # blocker: "other_work_name"  # REQUIRED for status: blocked
+      
+    work_name_2:
+      status: "not_started"
+  
+  # CONSTRAINT VALIDATION - Proving we followed constraints
+  constraints_validated:
+    embeddings:
+      ada002: "✓ Service running on port 8001"
+      e5: "✓ Existing service on port 8000"
+    testing:
+      framework: "✓ Jest configured"
+      coverage: "✗ Currently 45%"
+  
+  # SUCCESS CRITERIA RESULTS - Evidence of success
+  criteria_results:
+    functional:
+      - "✓ Ada-002 operational"
+      - "✗ Pattern extraction not started"
+      - "✗ Tests at 45% coverage"
+    performance:
+      - "✓ Search latency 150ms"
+      - "- Pattern extraction not measured"
+  
+  # LEARNINGS - What we discovered
+  learnings:
+    technical:
+      - "OpenAI API has 3 req/sec rate limit on free tier"
+      - "Ada-002 requires different vector column (1536 dims)"
+    architectural:
+      - "Separate services allow independent scaling"
+    process:
+      - "Test OpenAI connectivity before Docker setup"
+  
+  # OUTCOME
+  outcome: "in_progress|success|partial|failed"
+  completed: "timestamp or null"
+  
+  # NEXT STEPS
+  next_execution:
+    focus: "Complete pattern extraction"
+    blockers: ["Need OpenAI API quota increase"]

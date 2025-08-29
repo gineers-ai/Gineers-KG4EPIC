@@ -1,0 +1,305 @@
+# BLUEPRINT: KG4EPIC PHASE_2 Enhanced (v6)
+# Comprehensive multi-tier embeddings, pattern extraction, and testing
+
+BLUEPRINT:
+  id: kg4epic_phase2_enhanced
+  version: 6.0
+  scope: |
+    PHASE_2 comprehensive enhancement of KG4EPIC:
+    1. Multi-tier embeddings (E5 + OpenAI ada-002) for enhanced semantic capabilities
+    2. Pattern extraction pipeline to harvest learnings from EXECUTIONs
+    3. Complete test suite to eliminate technical debt (0% → 80%+ coverage)
+    4. Performance optimization and production readiness
+  
+  # CONSTRAINTS - Technical decisions locked for PHASE_2
+  constraints:
+    embeddings:
+      tier_1: "E5-large-v2 (1024 dims) - existing, for general search"
+      tier_2: "text-embedding-ada-002 (1536 dims) - new, for content"
+      future_tier_3: "text-embedding-3-large (3072 dims) - PHASE_3"
+      architecture: "Separate Python services per model"
+      
+    database:
+      system: "PostgreSQL 15 with pgvector"
+      schema: "v5.1 with 6 tables (phases, paths, works, path_works, tides, patterns)"
+      vector_columns: "Add embedding_ada002 column (1536 dims)"
+      
+    architecture:
+      pattern: "Microservices with language-optimized services"
+      deployment: "Docker Compose stack (4+ containers)"
+      networking: "Service names as hostnames"
+      
+    api:
+      style: "POST-only endpoints for security"
+      auth: "API key in x-api-key header"
+      versioning: "v2 endpoints for dual embeddings"
+      
+    testing:
+      framework: "Jest for Node.js, pytest for Python"
+      coverage_target: "80% minimum"
+      ci_cd: "GitHub Actions"
+      types: ["unit", "integration", "e2e", "performance"]
+      
+    pattern_extraction:
+      storage: "KNOWLEDGE/patterns/ as YAML"
+      triggers: "After 3+ successful executions"
+      scoring: "Reusability score 0.0-1.0"
+  
+  # WORKS - All implementation steps inline (PATH 1: Multi-tier Embeddings)
+  works:
+    # === PATH 1: MULTI-TIER EMBEDDINGS ===
+    
+    prepare_ada002_integration:
+      purpose: "Set up OpenAI API access and configuration"
+      verification:
+        - "OPENAI_API_KEY_ADA_002 in .env file"
+        - "Rate limiting configured (3 req/sec free tier)"
+        - "Error handling for quota exceeded"
+        
+    create_ada002_service:
+      purpose: "Build Python FastAPI service for ada-002 embeddings"
+      verification:
+        - "Service runs on port 8001"
+        - "Health endpoint returns model info"
+        - "Handles text up to 8191 tokens"
+        - "Returns 1536-dimension vectors"
+        
+    update_database_for_ada002:
+      purpose: "Add embedding_ada002 column to all tables"
+      verification:
+        - "Migration script created and tested"
+        - "All 6 tables have embedding_ada002 vector(1536)"
+        - "Indexes created for ada-002 vectors"
+        
+    implement_dual_embedding_api:
+      purpose: "Update API to generate both E5 and ada-002 embeddings"
+      verification:
+        - "POST /api/v2/embeddings.generate works"
+        - "Both embeddings stored in database"
+        - "Backward compatibility maintained"
+        
+    create_hybrid_search:
+      purpose: "Search using both embedding types with weighted scoring"
+      verification:
+        - "POST /api/v2/search.hybrid endpoint works"
+        - "Weight parameter (0.0-1.0) for E5 vs ada-002"
+        - "Returns results from both embeddings"
+        - "Performance < 200ms"
+    
+    # === PATH 2: PATTERN EXTRACTION ===
+    
+    design_pattern_schema:
+      purpose: "Define YAML structure for extracted patterns"
+      verification:
+        - "Schema matches v6 PATTERN format"
+        - "Includes problem, solution, reusability, evidence"
+        - "Validation schema created"
+        
+    implement_execution_analyzer:
+      purpose: "Service to analyze completed EXECUTIONs"
+      verification:
+        - "Reads EXECUTION documents"
+        - "Identifies successful work patterns"
+        - "Calculates reusability scores"
+        
+    create_pattern_extraction_endpoint:
+      purpose: "API endpoint to trigger pattern extraction"
+      verification:
+        - "POST /api/patterns.extract works"
+        - "Accepts EXECUTION IDs as input"
+        - "Returns extracted pattern"
+        - "Saves to KNOWLEDGE/patterns/"
+        
+    implement_pattern_search:
+      purpose: "Search and retrieve patterns by problem/solution"
+      verification:
+        - "POST /api/patterns.search works"
+        - "Semantic search on problem descriptions"
+        - "Returns relevant patterns with scores"
+        
+    create_pattern_application_guide:
+      purpose: "Documentation for applying patterns to new BLUEPRINTs"
+      verification:
+        - "Guide shows pattern selection process"
+        - "Examples of pattern application"
+        - "Pattern composition strategies"
+    
+    # === PATH 3: TESTING DEBT RESOLUTION ===
+    
+    setup_jest_framework:
+      purpose: "Configure Jest for Node.js testing"
+      verification:
+        - "jest.config.js created"
+        - "Test scripts in package.json"
+        - "Coverage reporting configured"
+        
+    create_unit_tests:
+      purpose: "Unit tests for all service functions"
+      verification:
+        - "Services folder 100% covered"
+        - "Mocked dependencies"
+        - "Error cases tested"
+        
+    create_integration_tests:
+      purpose: "Test API endpoints with real database"
+      verification:
+        - "All endpoints have tests"
+        - "Database transactions tested"
+        - "Docker test environment"
+        
+    implement_e2e_tests:
+      purpose: "End-to-end workflow tests"
+      verification:
+        - "Complete BLUEPRINT → EXECUTION → PATTERN flow"
+        - "Multi-container coordination tested"
+        - "Real embeddings tested"
+        
+    setup_performance_tests:
+      purpose: "Benchmark and load testing"
+      verification:
+        - "Response time benchmarks"
+        - "Concurrent request handling"
+        - "Memory usage monitoring"
+        
+    configure_github_actions:
+      purpose: "CI/CD pipeline for automated testing"
+      verification:
+        - ".github/workflows/test.yml created"
+        - "Tests run on every push"
+        - "Coverage reports in PRs"
+        - "Build status badge"
+    
+    # === OPTIMIZATION & DOCUMENTATION ===
+    
+    implement_caching_layer:
+      purpose: "Redis caching for embeddings and search results"
+      verification:
+        - "Redis container added to stack"
+        - "Cache hit rate > 50%"
+        - "TTL configuration"
+        
+    optimize_vector_operations:
+      purpose: "Improve pgvector query performance"
+      verification:
+        - "IVFFlat indexes optimized"
+        - "Batch operations implemented"
+        - "Query plans analyzed"
+        
+    create_api_documentation:
+      purpose: "OpenAPI/Swagger documentation"
+      verification:
+        - "swagger.json generated"
+        - "Interactive API explorer"
+        - "All endpoints documented"
+        
+    fix_health_check_displays:
+      purpose: "Resolve embeddings service health check issue"
+      verification:
+        - "All services show healthy in Docker"
+        - "Proper health endpoints"
+        - "Monitoring dashboard"
+  
+  # SUCCESS CRITERIA - Evidence that PHASE_2 is complete
+  success_criteria:
+    multi_tier_embeddings:
+      - "Both E5 and ada-002 services operational"
+      - "Dual embeddings stored for all content"
+      - "Hybrid search with weighted scoring"
+      - "Search accuracy > 0.85"
+      
+    pattern_extraction:
+      - "5+ patterns extracted from PHASE_1 executions"
+      - "Pattern search endpoint functional"
+      - "Reusability scores calculated"
+      - "Patterns successfully applied to new work"
+      
+    testing_coverage:
+      - "Overall coverage > 80%"
+      - "All critical paths tested"
+      - "CI/CD pipeline running"
+      - "No failing tests"
+      
+    performance:
+      - "API response < 100ms (cached)"
+      - "Search latency < 200ms"
+      - "Pattern extraction < 5s"
+      - "99% uptime during testing"
+      
+    technical_debt:
+      - "Health checks all green"
+      - "API fully documented"
+      - "Error handling comprehensive"
+      - "Logging and monitoring active"
+  
+  # EXECUTION EVIDENCE - What artifacts prove completion
+  evidence_required:
+    screenshots:
+      - "Docker stack with 4+ healthy containers"
+      - "Jest coverage report showing 80%+"
+      - "Swagger UI with all endpoints"
+      - "GitHub Actions green builds"
+      
+    logs:
+      - "Ada-002 service startup logs"
+      - "Pattern extraction results"
+      - "Performance benchmark results"
+      - "Test execution reports"
+      
+    files:
+      - "embeddings-ada002/app.py"
+      - "src/services/patternExtractor.ts"
+      - "tests/ folder with all test files"
+      - ".github/workflows/test.yml"
+      
+    database:
+      - "SHOW COLUMNS showing embedding_ada002"
+      - "SELECT from patterns table"
+      - "Vector similarity queries"
+  
+  # CURRENT STATUS
+  status: READY_TO_EXECUTE
+  
+  # PHASE_1 LEARNINGS TO APPLY
+  learnings_from_phase1:
+    technical:
+      - "Python services more reliable for ML operations"
+      - "Separate services allow language optimization"
+      - "Docker networking uses service names"
+      - "E5 needs 'query:' prefix for searches"
+      
+    architectural:
+      - "Microservices provide better scalability"
+      - "Health checks critical for container orchestration"
+      - "Mock embeddings useful for testing"
+      
+    process:
+      - "Test early to catch integration issues"
+      - "Evidence artifacts essential for validation"
+      - "Validation scripts prove functionality"
+  
+  # NOTES FOR AI EXECUTION
+  for_ai: |
+    PHASE_2 has THREE parallel paths that can be worked on independently:
+    1. Multi-tier embeddings (5 works)
+    2. Pattern extraction (5 works) 
+    3. Testing debt (6 works)
+    4. Optimization (4 works)
+    
+    IMPORTANT: OpenAI API key is already in .env as OPENAI_API_KEY_ADA_002
+    
+    Recommended execution order:
+    1. Start with ada-002 integration (builds on existing E5)
+    2. Parallel: Begin test setup while embeddings deploy
+    3. Pattern extraction after some tests provide EXECUTIONs
+    4. Optimization last (after everything works)
+    
+    Each work should generate artifacts as evidence.
+    Update EXECUTION document after each work.
+    This is evidence-driven - no deadlines, only proof of completion.
+  
+  # REFERENCES
+  based_on:
+    - "PHASE_1 TIDE_2 success with Python embeddings service"
+    - "v5.1 database schema already deployed"
+    - "3-container Docker stack operational"
+    - "Semantic search with E5 working at >0.8 accuracy"

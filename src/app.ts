@@ -8,6 +8,7 @@ import workRoutes from './api/routes/work';
 import pathRoutes from './api/routes/path';
 import tideRoutes from './api/routes/tide';
 import searchRoutes from './api/routes/search';
+import embeddingsRoutes from './api/routes/embeddings';
 
 const app = express();
 
@@ -23,10 +24,13 @@ const limiter = rateLimit({
 });
 app.use('/api/', limiter);
 
-// Authentication
+// Routes (embedddings have their own auth)
+app.use('/api', embeddingsRoutes);
+
+// Authentication for other routes
 app.use('/api/', apiKeyAuth);
 
-// Routes (all POST)
+// Protected routes (all POST)
 app.use('/api', workRoutes);
 app.use('/api', pathRoutes);
 app.use('/api', tideRoutes);
