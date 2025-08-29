@@ -1,0 +1,238 @@
+# BLUEPRINT: EPIC-TIDE v8 Pure Implementation - Phase 1 Trial 1
+# Human vision with AI-generated works following v8 architecture
+
+BLUEPRINT:
+  # === METADATA ===
+  # NOTE: id and version added by storage layer (Gineers-KG), not by AI
+  slug: "epic-tide-v8-phase-1-t1"
+  name: "EPIC-TIDE v8 Pure Implementation - Phase 1"
+  
+  # === PHASE MANAGEMENT ===
+  phase:
+    number: 1
+    previous_phase_slug: null  # First phase
+    goal_change: false  # New project, not a change
+  
+  # === HUMAN SECTION (Written by Human) ===
+  vision: |
+    Implement a pure EPIC-TIDE v8 system for KG4EPIC that demonstrates:
+    - The CONFIRM gateway for human→AI handoff
+    - Hybrid YAML/Semantic storage architecture
+    - Terminal as event bus with structured output
+    - Full AI autonomy within TIDE boundaries
+    - Evidence-based progress tracking
+    
+    This is dogfooding - we use v8 to build v8's reference implementation.
+    Success means a working system that stores and retrieves EPIC-TIDE documents
+    with proper v8 architecture including CONFIRM, semantic layer, and patterns.
+  
+  goals:
+    - "Deploy v8 database schema with hybrid storage"
+    - "Implement CONFIRM gateway with blueprint locking"
+    - "Create YAML→Semantic translator for AI optimization"
+    - "Build terminal event emitter for ACC monitoring"
+    - "Demonstrate full TIDE execution with evidence"
+  
+  # === AI SECTION (Generated from Vision) ===
+  scope: |
+    Technical implementation of EPIC-TIDE v8 architecture:
+    - PostgreSQL database with v8 schema (blueprints, semantic_executions, etc.)
+    - CONFIRM API endpoint that locks blueprints and triggers translation
+    - Semantic layer that converts YAML to AI-optimized format
+    - Structured terminal output for ACC monitoring
+    - Evidence collection and async pattern extraction
+  
+  constraints:
+    technical:
+      database: "PostgreSQL 15 with pgvector extension"
+      storage: "Hybrid YAML (human) + Semantic (AI)"
+      api: "POST-only endpoints with CONFIRM gateway"
+      embeddings: "E5-large-v2 (1024) + ada-002 (1536)"
+      deployment: "Docker compose multi-container"
+    
+    resources:
+      max_tide_attempts: 10
+      time_box: "No deadlines - evidence-driven only"
+      
+    boundaries:
+      must_not_change: ["v8 architecture", "CONFIRM gateway", "hybrid storage"]
+      can_adapt: ["implementation details", "service ports", "testing approach"]
+  
+  works:
+    deploy_v8_schema:
+      purpose: "Create database with v8 tables"
+      prerequisites: []
+      verification:
+        - "All v8 tables created (blueprints, semantic_executions, etc.)"
+        - "UUID generation working"
+        - "Indexes created for performance"
+      adaptable: false  # Must follow v8 schema exactly
+    
+    implement_blueprint_storage:
+      purpose: "Store YAML blueprints with locking"
+      prerequisites: ["deploy_v8_schema"]
+      verification:
+        - "YAML blueprints stored with UUID + slug"
+        - "Locking mechanism prevents changes after CONFIRM"
+        - "API endpoint /v8/blueprints working"
+      adaptable: true
+    
+    create_confirm_gateway:
+      purpose: "Implement CONFIRM that triggers AI autonomy"
+      prerequisites: ["implement_blueprint_storage"]
+      verification:
+        - "CONFIRM endpoint locks blueprint"
+        - "Creates confirmation_record"
+        - "Triggers semantic translation"
+        - "Returns execution ID"
+      adaptable: false  # Core v8 concept
+    
+    build_semantic_translator:
+      purpose: "Convert YAML to semantic format for AI"
+      prerequisites: ["create_confirm_gateway"]
+      verification:
+        - "YAML parsed and converted to semantic"
+        - "Embeddings generated for semantic fields"
+        - "Semantic_executions record created"
+      adaptable: true
+    
+    implement_terminal_events:
+      purpose: "Emit structured events for ACC monitoring"
+      prerequisites: []
+      verification:
+        - "Events in format [EPIC-TIDE:TYPE:STATUS:DATA]"
+        - "All state changes emit events"
+        - "Events parseable by ACC"
+      adaptable: true
+    
+    create_execution_tracker:
+      purpose: "Track TIDE execution with evidence"
+      prerequisites: ["build_semantic_translator", "implement_terminal_events"]
+      verification:
+        - "Execution status updates in real-time"
+        - "Evidence collected and stored"
+        - "Work attempts tracked"
+      adaptable: true
+    
+    implement_pattern_extraction:
+      purpose: "Async pattern extraction from success"
+      prerequisites: ["create_execution_tracker"]
+      verification:
+        - "Patterns extracted after successful TIDE"
+        - "Pattern embeddings generated"
+        - "Patterns searchable for future use"
+      adaptable: true
+    
+    build_v8_api:
+      purpose: "Complete v8 API with all endpoints"
+      prerequisites: ["implement_blueprint_storage", "create_confirm_gateway"]
+      verification:
+        - "POST /v8/blueprints - Create blueprint"
+        - "POST /v8/confirm - CONFIRM gateway"
+        - "POST /v8/search - Semantic search"
+        - "POST /v8/evidence - Retrieve evidence"
+      adaptable: true
+    
+    create_integration_tests:
+      purpose: "Validate complete v8 flow"
+      prerequisites: ["build_v8_api"]
+      verification:
+        - "Blueprint→CONFIRM→Execution flow tested"
+        - "Semantic search validated"
+        - "Pattern extraction verified"
+      adaptable: true
+    
+    deploy_production_stack:
+      purpose: "Deploy complete v8 system"
+      prerequisites: ["create_integration_tests"]
+      verification:
+        - "All services running in Docker"
+        - "Health checks passing"
+        - "System accessible and functional"
+      adaptable: true
+  
+  success_criteria:
+    functional:
+      - "CONFIRM gateway locks blueprints successfully"
+      - "Semantic translation preserves all information"
+      - "Terminal events enable ACC monitoring"
+      - "Evidence proves work completion"
+      - "Patterns extracted for reuse"
+    
+    quality:
+      - "Semantic search <100ms response"
+      - "No data loss in YAML→Semantic conversion"
+      - "100% structured event emission"
+    
+    evidence:
+      - "Running v8 system in Docker"
+      - "Successful blueprint→execution flow"
+      - "Pattern library with extracted knowledge"
+  
+  # === CONFIRMATION REQUIREMENTS ===
+  requires_confirmation:
+    resources_needed:
+      - "PostgreSQL with pgvector"
+      - "Docker environment"
+      - "OpenAI API key for ada-002"
+    
+    human_must_provide:
+      - "Approval to proceed with v8 architecture"
+      - "Confirmation that v6 work can be paused"
+    
+    risks_acknowledged:
+      - "Fresh start means rebuilding from scratch"
+      - "v8 is unproven in production"
+      - "May need iteration to get right"
+  
+  # === AUTONOMY BOUNDARIES ===
+  tide_autonomy:
+    allowed_adaptations:
+      - "Retry failed database operations"
+      - "Adjust API endpoint paths"
+      - "Optimize query performance"
+      - "Add helpful logging"
+    
+    phase_triggers:
+      - "v8 architecture fundamentally flawed"
+      - "CONFIRM gateway concept doesn't work"
+      - "Semantic translation loses critical data"
+      - "Performance requirements impossible"
+  
+  # === AI EXECUTION INSTRUCTIONS ===
+  for_ai: |
+    Priority order:
+    1. Database schema first (foundation)
+    2. CONFIRM gateway (core innovation)
+    3. Semantic layer (AI optimization)
+    4. Terminal events (monitoring)
+    5. Everything else builds on these
+    
+    Critical success factors:
+    - CONFIRM must truly lock blueprints
+    - Semantic must preserve all YAML information
+    - Events must be parseable by ACC
+    
+    Known considerations:
+    - Use existing E5 and ada-002 services
+    - Reuse Docker setup from v6
+    - Keep API POST-only for security
+  
+  # === STATUS TRACKING ===
+  status: "draft"  # draft → pending_confirm → confirmed → in_progress → complete
+  
+  # === REFERENCES ===
+  # NOTE: AI references by semantic search or slugs, not IDs
+  based_on:
+    pattern_descriptions: ["v6 simplified structure learnings"]
+    previous_execution_slugs: ["kg4epic-phase2-execution-1"]
+    related_blueprint_slugs: ["kg4epic_phase2_enhanced"]
+
+# === USAGE NOTES ===
+# 1. Human reviews this blueprint
+# 2. Human issues CONFIRM command
+# 3. System locks blueprint (immutable)
+# 4. AI begins autonomous TIDE execution
+# 5. No human intervention until TIDE complete
+# 6. Evidence determines success/failure
+# 7. Pattern extraction happens async after success
