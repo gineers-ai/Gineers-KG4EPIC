@@ -360,6 +360,95 @@ v8 provides the critical foundation for this vision:
 
 The journey from v8 to the full vision will be evidence-driven, with each step validated by real-world success before proceeding to the next level of sophistication.
 
+## System Interconnection Architecture
+
+### Actor and System Definitions
+
+```
+U: User (Human stakeholder)
+C: Claude Code (AI executor in terminal)
+M: MCP Tool Server (Bridge between C and G)
+G: Gineers-KG4EPIC (Knowledge storage)
+A: Gineers-ACC (AI Control/Communication Center)
+```
+
+### Execution Flow: From Blueprint to Phase
+
+```
+U -> C : "Build a blog system"
+C -> U : "What constraints, tech stack, and core features?"
+C -> M : Retrieve relevant patterns
+M -> G : Query API for similar projects
+G -> M : Return patterns (0 or many)
+C -> U : Propose BLUEPRINT based on patterns
+U -> C : "CONFIRM" 
+C      : Translate to AI-centric execution.yml
+C      : Start autonomous TIDE execution
+A      : Detect new execution (monitoring terminal)
+C      : Emit structured status updates
+A      : Parse terminal output, track progress
+C      : Complete TIDE (success or failure)
+A -> U : Alert completion status
+U -> C : Approve success OR request new PHASE
+```
+
+### Terminal as Event Bus
+
+The terminal becomes the primary communication channel through structured output:
+
+```bash
+[EPIC-TIDE:BLUEPRINT:READY:kg4epic-blog]
+[EPIC-TIDE:CONFIRM:RECEIVED:2024-01-29T10:00:00Z]
+[EPIC-TIDE:TIDE:1:START]
+[EPIC-TIDE:WORK:database-setup:IN_PROGRESS]
+[EPIC-TIDE:WORK:database-setup:COMPLETE]
+[EPIC-TIDE:TIDE:1:FAILED:constraint-violation]
+[EPIC-TIDE:TIDE:2:START]
+[EPIC-TIDE:TIDE:2:SUCCESS]
+[EPIC-TIDE:PHASE:CHANGE:NEEDED:goal-unachievable]
+```
+
+### ACC Orchestration Capabilities
+
+1. **Terminal Monitoring**: ACC watches structured output
+2. **Command Injection**: ACC can type commands to guide execution
+3. **Multi-Actor Coordination**: ACC manages parallel terminal sessions
+4. **Alert Management**: ACC notifies users of critical events
+
+### State Machine
+
+```
+INITIAL
+  ↓
+BLUEPRINT_PROPOSED
+  ↓
+CONFIRM_RECEIVED ←─────┐
+  ↓                    │
+TIDE_EXECUTING         │
+  ↓                    │
+TIDE_COMPLETE ─────────┤
+  ├─SUCCESS → END      │
+  ├─RETRY → TIDE_EXECUTING
+  └─PHASE_CHANGE ──────┘
+```
+
+### Critical Design Decisions
+
+1. **No Direct IDs**: AI never generates system IDs (UUIDs handled by storage layer)
+2. **Full Autonomy**: After CONFIRM, no human intervention until TIDE completes
+3. **Structured Output**: All terminal communication uses parseable format
+4. **Async Alerting**: ACC→User communication happens outside terminal
+
+### Benefits of This Architecture
+
+- **Clean Separation**: Each component has a single responsibility
+- **Terminal Simplicity**: No complex APIs, just text parsing
+- **AI Autonomy**: Claude Code executes without external dependencies
+- **Orchestration Power**: ACC enables multi-actor coordination
+- **Knowledge Reuse**: MCP bridge enables pattern-based development
+
+The journey from v8 to the full vision will be evidence-driven, with each step validated by real-world success before proceeding to the next level of sophistication.
+
 ## Conclusion
 
 v8 represents the optimal balance between:
