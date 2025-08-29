@@ -1,0 +1,465 @@
+# BLUEPRINT: KG4EPIC v8 Passive Storage System - PHASE 1 FINAL
+# Merged from t1, t2, t3 with all corrections applied
+# KG4EPIC is a REST API storage service, NOT the MCP Server
+
+BLUEPRINT:
+  # === METADATA ===
+  slug: "kg4epic-v8-passive-storage-final"
+  name: "KG4EPIC v8 Passive Storage System - Final"
+  
+  # === PHASE MANAGEMENT ===
+  phase:
+    number: 1
+    previous_phase_slug: null  # Fresh start
+    goal_change: false
+  
+  # === HUMAN SECTION (Vision & Goals) ===
+  vision: |
+    Build KG4EPIC as a PASSIVE document storage system with MCP-compatible API.
+    
+    Critical Understanding:
+    - KG4EPIC implements the MCP contract (single /api/tool endpoint)
+    - KG4EPIC is POST-only as per requirement
+    - MCP Server is a bridge, not a translator
+    
+    Architecture:
+    Claude Code → MCP Server → KG4EPIC /api/tool → PostgreSQL
+         ↓           ↓              ↓                ↓
+    Orchestrates   Bridge    MCP Contract      Database
+    
+    KG4EPIC accepts MCP-formatted requests via single endpoint,
+    routes internally to appropriate handlers, returns MCP format.
+  
+  goals:
+    - "Deploy PostgreSQL with v8 schema (4 tables: blueprints, executions, evidence, patterns)"
+    - "Provide single /api/tool endpoint accepting MCP format (POST only)"
+    - "Enable semantic search with dual embeddings (E5 for metadata, Ada-002 for content)"
+    - "Store documents exactly as received (no validation, no workflow logic)"
+    - "Return documents in MCP response format per contract"
+  
+  # === AI SECTION (Technical Interpretation) ===
+  scope: |
+    A pure passive storage API with MCP contract:
+    - PostgreSQL 15 with pgvector for 4 document types
+    - Single /api/tool endpoint (POST only)
+    - Internal routing based on 'tool' parameter
+    - Dual embedding strategy for semantic search
+    - No workflow logic, no state machines, no orchestration
+    - MCP request/response format as specified in contract
+    - Simply store what's given, return what's asked
+  
+  constraints:
+    technical:
+      database:
+        system: "PostgreSQL 15 with pgvector extension"
+        tables:
+          blueprints: "id(uuid), slug(varchar-255), name(varchar-255), yaml_content(text), metadata(jsonb), tags(text[]), embedding_name(vector-1024), embedding_content(vector-1536), created_at, updated_at"
+          executions: "id(uuid), blueprint_id(uuid-fk), tide_number(int), status(varchar-20), content(jsonb), embedding_summary(vector-1536), created_at, updated_at"
+          evidence: "id(uuid), execution_id(uuid-fk), work_key(varchar-255), evidence_type(varchar-50), content(jsonb), artifacts(jsonb), created_at"
+          patterns: "id(uuid), problem(text), solution(text), applicability_score(float), embedding_problem(vector-1536), embedding_solution(vector-1536), usage_count(int-default-0), created_at"
+        indexes:
+          btree: "ON slugs, work_keys, created_at"
+          ivfflat: "ON all vector columns WITH (lists = 100)"
+          gin: "ON all jsonb columns"
+      
+      api:
+        style: "Single endpoint with MCP contract (POST only)"
+        endpoint: "/api/tool"
+        request_format: '{"tool": "tool-name", "arguments": {...}}'
+        response_format: '{"success": bool, "result": {"content": [...]}}'
+        tools:
+          blueprints:
+            - "blueprint-create    - Store new blueprint"
+            - "blueprint-get       - Retrieve blueprint by id/slug"
+            - "blueprint-list      - List all blueprints"
+            - "blueprint-update    - Update existing blueprint"
+            - "blueprint-search    - Semantic search on blueprints"
+          executions:
+            - "execution-create    - Store new execution"
+            - "execution-get       - Retrieve execution"
+            - "execution-update    - Update execution status"
+            - "execution-list      - List executions"
+          evidence:
+            - "evidence-add        - Add evidence to execution"
+            - "evidence-list       - List evidence for execution"
+          patterns:
+            - "pattern-create      - Store new pattern"
+            - "pattern-get         - Retrieve pattern"
+            - "pattern-list        - List all patterns"
+            - "pattern-search      - Find similar patterns"
+          utility:
+            - "health-check        - System status"
+            - "search-semantic     - Cross-entity semantic search"
+        mcp_response_format:
+          success: |
+            {
+              "success": true,
+              "result": {
+                "content": [
+                  {"type": "text", "text": "Operation successful"}
+                ]
+              }
+            }
+          error: |
+            {
+              "success": false,
+              "error": "Error message",
+              "error_code": "ERROR_CODE"
+            }
+        error_codes:
+          - "REQUIRED_FIELD_MISSING"
+          - "ENTITY_NOT_FOUND"
+          - "INVALID_FORMAT"
+          - "DATABASE_ERROR"
+      
+      embeddings:
+        light_fields:
+          model: "E5-large-v2"
+          dimensions: 1024
+          fields: ["name", "slug", "tags", "summary"]
+          service_url: "http://embeddings:8000"
+        heavy_fields:
+          model: "text-embedding-ada-002"
+          dimensions: 1536
+          fields: ["yaml_content", "content", "problem", "solution"]
+          service_url: "http://embeddings-ada002:8001"
+        strategy: "Generate on document save, store with document"
+      
+      deployment:
+        containers:
+          - "postgres:15 with pgvector (port 5432)"
+          - "embeddings-e5 Python service (port 8000)"
+          - "embeddings-ada002 Python service (port 8001)"
+          - "api Node.js/TypeScript service (port 3000)"
+        docker_compose: "Existing infrastructure preserved"
+      
+      performance:
+        storage_latency: "< 100ms (P95)"
+        retrieval_latency: "< 50ms (P95)"
+        search_latency: "< 200ms (P95)"
+        max_document_size: "10MB"
+        max_batch_size: "100 documents"
+        concurrent_connections: "100"
+    
+    resources:
+      existing:
+        - "Docker Compose infrastructure"
+        - "E5 embeddings service (port 8000) - KEEP AS IS"
+        - "Ada-002 embeddings service (port 8001) - KEEP AS IS"
+        - "PostgreSQL container - REBUILD with v8 schema"
+      needed:
+        - "REST API implementation"
+        - "Embedding pipeline integration"
+        - "Search implementation"
+      
+    boundaries:
+      must_not:
+        - "NO MCP protocol implementation"
+        - "NO workflow orchestration"
+        - "NO confirmation logic"
+        - "NO state machines"
+        - "NO event handling"
+        - "NO autonomous actions"
+      must:
+        - "Store any valid JSON document"
+        - "Generate embeddings on save"
+        - "Return documents when queried"
+        - "Maintain data integrity"
+  
+  works:
+    # === DATABASE FOUNDATION ===
+    
+    drop_legacy_schema:
+      purpose: "Remove old v5.1 tables to start fresh"
+      prerequisites: []
+      verification:
+        - "Old tables (phases, paths, tides, works, path_works) dropped"
+        - "pgvector extension preserved"
+        - "Database backup created if needed"
+      adaptable: false
+    
+    create_v8_schema:
+      purpose: "Deploy v8 database schema"
+      prerequisites: ["drop_legacy_schema"]
+      verification:
+        - "Table blueprints with 8 columns + 2 vector columns"
+        - "Table executions with 8 columns + 1 vector column"
+        - "Table evidence with 7 columns"
+        - "Table patterns with 8 columns + 2 vector columns"
+        - "All UUID generation working"
+        - "All foreign keys established"
+        - "All indexes created (btree, ivfflat, gin)"
+      adaptable: false
+    
+    # === MCP API IMPLEMENTATION ===
+    
+    setup_api_structure:
+      purpose: "Create Node.js/TypeScript API with MCP contract"
+      prerequisites: []
+      verification:
+        - "Express server setup with TypeScript"
+        - "Single route: POST /api/tool"
+        - "Middleware: body-parser, error-handler"
+        - "Database connection pool configured"
+        - "MCP request validation"
+      adaptable: false
+    
+    implement_tool_router:
+      purpose: "Route MCP tools to internal handlers"
+      prerequisites: ["setup_api_structure"]
+      verification:
+        - "Extracts 'tool' and 'arguments' from request"
+        - "Routes to appropriate handler function"
+        - "Returns MCP-formatted response"
+        - "Handles unknown tools with proper error"
+      adaptable: false
+    
+    implement_blueprint_tools:
+      purpose: "MCP tools for blueprint operations"
+      prerequisites: ["implement_tool_router", "create_v8_schema"]
+      verification:
+        - "blueprint-create stores and returns ID"
+        - "blueprint-get retrieves by id or slug"
+        - "blueprint-list returns all blueprints"
+        - "blueprint-update modifies existing"
+        - "blueprint-search performs semantic search"
+      adaptable: false
+    
+    implement_execution_tools:
+      purpose: "MCP tools for execution operations"
+      prerequisites: ["implement_tool_router", "create_v8_schema"]
+      verification:
+        - "execution-create stores new execution"
+        - "execution-get retrieves by id"
+        - "execution-update modifies status/content"
+        - "execution-list returns executions"
+      adaptable: false
+    
+    implement_evidence_endpoints:
+      purpose: "Endpoints for evidence management"
+      prerequisites: ["implement_execution_endpoints"]
+      verification:
+        - "POST /api/v8/executions/:id/evidence adds evidence"
+        - "GET /api/v8/executions/:id/evidence lists evidence"
+        - "Evidence linked to execution_id"
+      adaptable: false
+    
+    implement_pattern_endpoints:
+      purpose: "CRUD endpoints for patterns"
+      prerequisites: ["setup_api_structure", "create_v8_schema"]
+      verification:
+        - "POST /api/v8/patterns stores pattern"
+        - "GET /api/v8/patterns/:id returns pattern"
+        - "GET /api/v8/patterns lists all patterns"
+        - "Usage count increments on retrieval"
+      adaptable: false
+    
+    # === EMBEDDING INTEGRATION ===
+    
+    integrate_embedding_services:
+      purpose: "Connect to existing embedding services"
+      prerequisites: ["setup_api_structure"]
+      verification:
+        - "E5 service connection verified (port 8000)"
+        - "Ada-002 service connection verified (port 8001)"
+        - "Health checks passing for both services"
+        - "Embedding generation functions working"
+      adaptable: false
+    
+    implement_embedding_pipeline:
+      purpose: "Auto-generate embeddings on document save"
+      prerequisites: ["integrate_embedding_services", "implement_blueprint_endpoints"]
+      verification:
+        - "On blueprint save: name→E5, content→Ada-002"
+        - "On execution save: summary→Ada-002"
+        - "On pattern save: problem/solution→Ada-002"
+        - "Embeddings stored in vector columns"
+        - "No embedding = no save (transaction rollback)"
+      adaptable: true
+    
+    # === SEARCH IMPLEMENTATION ===
+    
+    implement_semantic_search:
+      purpose: "Semantic search across all document types"
+      prerequisites: ["implement_embedding_pipeline"]
+      verification:
+        - "GET /api/v8/search?q=...&type=... works"
+        - "Query text converted to embeddings"
+        - "Vector similarity search using pgvector"
+        - "Results sorted by similarity score"
+        - "Supports filtering by document type"
+      adaptable: true
+    
+    optimize_search_performance:
+      purpose: "Ensure search meets latency requirements"
+      prerequisites: ["implement_semantic_search"]
+      verification:
+        - "IVFFlat indexes properly configured"
+        - "Search latency < 200ms (P95)"
+        - "Concurrent searches supported"
+        - "Result caching implemented"
+      adaptable: true
+    
+    # === RESPONSE FORMATTING ===
+    
+    standardize_responses:
+      purpose: "Consistent JSON response format"
+      prerequisites: ["implement_blueprint_endpoints", "implement_execution_endpoints"]
+      verification:
+        - "All success responses: {data, status, timestamp}"
+        - "All error responses: {error: {message, code}, status}"
+        - "List responses include pagination metadata"
+        - "Proper HTTP status codes used"
+      adaptable: false
+    
+    # === TESTING & VALIDATION ===
+    
+    create_integration_tests:
+      purpose: "Test all endpoints end-to-end"
+      prerequisites: ["standardize_responses"]
+      verification:
+        - "Test suite covers all 15+ endpoints"
+        - "Tests document creation with embeddings"
+        - "Tests search functionality"
+        - "Tests error scenarios"
+        - "All tests passing"
+      adaptable: true
+    
+    validate_performance:
+      purpose: "Ensure performance requirements met"
+      prerequisites: ["create_integration_tests"]
+      verification:
+        - "Load test: 100 concurrent connections"
+        - "Storage latency < 100ms (P95)"
+        - "Retrieval latency < 50ms (P95)"
+        - "Search latency < 200ms (P95)"
+      adaptable: true
+    
+    # === DEPLOYMENT ===
+    
+    deploy_complete_system:
+      purpose: "Deploy all services via Docker Compose"
+      prerequisites: ["validate_performance"]
+      verification:
+        - "docker-compose up starts all 4 services"
+        - "Health endpoint returns healthy"
+        - "All endpoints accessible"
+        - "Embeddings generating correctly"
+        - "Search returning results"
+      adaptable: false
+  
+  success_criteria:
+    functional:
+      - "4 tables created with proper schema and indexes"
+      - "Single /api/tool endpoint handling 18+ MCP tools"
+      - "Dual embeddings generating on save"
+      - "Semantic search returning relevant results"
+      - "MCP-formatted responses per contract"
+    
+    performance:
+      - "Storage operations < 100ms (P95)"
+      - "Retrieval operations < 50ms (P95)"
+      - "Search operations < 200ms (P95)"
+      - "100 concurrent connections supported"
+    
+    architecture:
+      - "Zero workflow logic - pure storage only"
+      - "No MCP protocol implementation"
+      - "Clean REST API design"
+      - "Proper separation of concerns"
+    
+    evidence:
+      - "Database schema screenshot showing 4 tables"
+      - "Postman collection testing all endpoints"
+      - "Load test results showing latencies"
+      - "Docker ps showing 4 healthy containers"
+      - "Search results with similarity scores"
+  
+  # === CONFIRMATION REQUIREMENTS ===
+  requires_confirmation:
+    resources_needed:
+      - "PostgreSQL with pgvector"
+      - "Docker environment"
+      - "Existing embedding services"
+    
+    human_must_acknowledge:
+      - "KG4EPIC is NOT the MCP Server"
+      - "KG4EPIC provides REST API only"
+      - "MCP Server is a separate project"
+      - "No workflow logic in KG4EPIC"
+    
+    decisions_made:
+      - "REST API instead of MCP protocol"
+      - "Standard JSON instead of MCP format"
+      - "Dual embedding strategy confirmed"
+      - "4 tables only (no workflow tables)"
+  
+  # === AI EXECUTION INSTRUCTIONS ===
+  for_ai: |
+    CRITICAL UNDERSTANDING:
+    1. KG4EPIC implements the MCP contract directly
+    2. Single /api/tool endpoint (POST only)
+    3. MCP request/response format required
+    
+    Architecture clarity:
+    - Claude Code: Orchestrates workflow
+    - MCP Server: Bridge/proxy (passes through)
+    - KG4EPIC: MCP contract implementation (THIS IS WHAT WE BUILD)
+    - PostgreSQL: Database backend
+    
+    Implementation order:
+    1. Drop old schema, create v8 tables
+    2. Build REST API with Express/TypeScript
+    3. Connect embedding services
+    4. Implement CRUD for all entities
+    5. Add embedding generation on save
+    6. Implement semantic search
+    7. Test and validate
+    
+    What KG4EPIC does:
+    - Accepts MCP-formatted requests at /api/tool
+    - Routes internally based on 'tool' parameter
+    - Stores JSON documents
+    - Generates embeddings
+    - Returns MCP-formatted responses
+    
+    What KG4EPIC does NOT do:
+    - No workflow orchestration
+    - No state management
+    - No event emission
+    - No autonomous actions
+    - No endpoints other than /api/tool
+    
+    Request format (MCP contract):
+    {
+      "tool": "blueprint-create",
+      "arguments": {
+        "slug": "...",
+        "yaml_content": "..."
+      }
+    }
+    
+    Response format (MCP contract):
+    {
+      "success": true,
+      "result": {
+        "content": [
+          {"type": "text", "text": "Blueprint created with ID: ..."}
+        ]
+      }
+    }
+  
+  # === STATUS ===
+  status: "ready_for_confirmation"
+  
+  # === REFERENCES ===
+  based_on:
+    previous_attempts: ["t1", "t2", "t3"]
+    merged_best_practices: true
+    corrected_misunderstandings: true
+
+# === FINAL NOTES ===
+# This blueprint represents the definitive Phase 1 specification
+# All architectural confusion has been resolved
+# KG4EPIC is purely a storage REST API
+# Ready for implementation
