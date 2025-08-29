@@ -10,11 +10,24 @@
 
 ## The v8 Architecture
 
+### Development Flow (Primary)
 ```
-BLUEPRINT (YAML) → CONFIRM (Human) → TRANSLATOR (Auto) → EXECUTION (AI) → EVIDENCE (AI) → PATTERNS (AI)
-                      ↑                                                                          ↓
-                      └─────────────── PHASE CHANGE (New Goal) ─────────────────────────────────┘
+BLUEPRINT (YAML) → CONFIRM (Human) → TRANSLATOR (Auto) → EXECUTION (AI) → EVIDENCE (AI)
+                      ↑                                                        ↓
+                      └────────────── PHASE CHANGE (New Goal) ────────────────┘
 ```
+
+### Knowledge Synthesis Flow (Secondary/Async)
+```
+EVIDENCE (AI) → PATTERN EXTRACTION (AI) → PATTERN LIBRARY
+                                               ↓
+                                    Future BLUEPRINTs benefit
+```
+
+**Key Insight**: Development and Knowledge Synthesis are SEPARATE processes.
+- Development runs BLUEPRINT→EVIDENCE in a tight loop
+- Pattern extraction happens asynchronously AFTER successful executions
+- PHASE changes are triggered by EVIDENCE, not PATTERNS
 
 ## Key Innovations Over v6
 
