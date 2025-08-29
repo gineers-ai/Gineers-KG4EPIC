@@ -1,0 +1,237 @@
+# BLUEPRINT: KG4EPIC v8 as Passive Storage System
+# Pure document storage with NO orchestration, NO events, NO flow control
+
+BLUEPRINT:
+  # === METADATA ===
+  slug: "kg4epic-v8-passive-storage"
+  name: "KG4EPIC v8 - Passive Document Storage"
+  
+  # === PHASE MANAGEMENT ===
+  phase:
+    number: 1
+    previous_phase_slug: null
+    goal_change: false
+  
+  # === HUMAN SECTION ===
+  vision: |
+    Build KG4EPIC as a PASSIVE storage system that:
+    - Stores documents (blueprints, executions, patterns) when asked
+    - Retrieves documents when queried
+    - Performs semantic search when requested
+    - DOES NOT handle events, flow control, or orchestration
+    
+    KG4EPIC is a library, not a conductor. It holds documents and 
+    returns them when asked. All intelligence and flow control 
+    happens in Claude Code and ACC, not here.
+  
+  goals:
+    - "Store v8 documents with proper schema"
+    - "Retrieve documents via MCP tools"
+    - "Search documents semantically"
+    - "Return results in MCP format"
+    - "NO orchestration or event handling"
+  
+  # === AI SECTION ===
+  scope: |
+    A passive document storage API that:
+    - Accepts documents via MCP tools and stores them
+    - Returns documents when queried
+    - Performs semantic search using embeddings
+    - Maintains data integrity with UUIDs
+    - Provides zero workflow logic
+  
+  constraints:
+    technical:
+      database: "PostgreSQL 15 with pgvector"
+      api: "Single /api/tool endpoint (MCP contract)"
+      embeddings: "E5 (1024) + ada-002 (1536) services"
+      deployment: "Docker compose"
+    
+    resources:
+      time_box: "Evidence-driven only"
+      
+    boundaries:
+      must_not_have: ["event handling", "flow control", "orchestration", "CONFIRM logic"]
+      must_have: ["storage", "retrieval", "search", "MCP format"]
+  
+  works:
+    deploy_v8_database:
+      purpose: "Create database for document storage"
+      prerequisites: []
+      verification:
+        - "Tables: blueprints, executions, patterns, evidence"
+        - "UUID generation working"
+        - "pgvector indexes created"
+        - "NO workflow or state tables"
+      adaptable: false
+    
+    implement_mcp_gateway:
+      purpose: "Single endpoint for all operations"
+      prerequisites: []
+      verification:
+        - "POST /api/tool endpoint working"
+        - "Accepts {tool, arguments} format"
+        - "Returns {success, result/error} format"
+        - "NO business logic, just routing"
+      adaptable: false
+    
+    create_storage_tools:
+      purpose: "Tools to store documents"
+      prerequisites: ["deploy_v8_database", "implement_mcp_gateway"]
+      verification:
+        - "blueprint-save: stores YAML blueprint with metadata"
+        - "execution-save: stores execution document"
+        - "evidence-save: stores evidence records"
+        - "pattern-save: stores extracted patterns"
+        - "All saves return ID only, no logic"
+      adaptable: false
+    
+    create_retrieval_tools:
+      purpose: "Tools to retrieve documents"
+      prerequisites: ["create_storage_tools"]
+      verification:
+        - "blueprint-get: returns blueprint by ID/slug"
+        - "execution-get: returns execution by ID"
+        - "evidence-list: returns evidence for execution"
+        - "pattern-list: returns all patterns"
+        - "Simple retrieval, no transformation"
+      adaptable: false
+    
+    create_update_tools:
+      purpose: "Tools to update existing documents"
+      prerequisites: ["create_storage_tools"]
+      verification:
+        - "blueprint-update: updates fields (NOT enforcing lock)"
+        - "execution-update: updates status and fields"
+        - "evidence-append: adds evidence to execution"
+        - "Just updates data, no validation logic"
+      adaptable: false
+    
+    implement_semantic_search:
+      purpose: "Search using embeddings"
+      prerequisites: ["create_storage_tools"]
+      verification:
+        - "search-blueprints: semantic search on blueprints"
+        - "search-executions: semantic search on executions"
+        - "search-patterns: find similar patterns"
+        - "Returns similarity scores and documents"
+      adaptable: true
+    
+    connect_embedding_services:
+      purpose: "Generate embeddings for documents"
+      prerequisites: ["implement_semantic_search"]
+      verification:
+        - "E5 service generates embeddings for light fields"
+        - "Ada-002 generates embeddings for content"
+        - "Embeddings stored with documents"
+        - "NO decision logic about when to use which"
+      adaptable: true
+    
+    implement_mcp_response_format:
+      purpose: "Ensure all responses follow MCP contract"
+      prerequisites: ["create_retrieval_tools"]
+      verification:
+        - "All responses have success field"
+        - "Success responses have result.content array"
+        - "Error responses have error string"
+        - "Content in [{type: 'text', text: '...'}] format"
+      adaptable: false
+    
+    create_integration_tests:
+      purpose: "Test storage and retrieval"
+      prerequisites: ["implement_mcp_response_format"]
+      verification:
+        - "Can store blueprint via tool"
+        - "Can retrieve stored blueprint"
+        - "Can search semantically"
+        - "MCP format validated"
+      adaptable: true
+    
+    deploy_passive_system:
+      purpose: "Deploy complete passive storage"
+      prerequisites: ["create_integration_tests"]
+      verification:
+        - "Database running"
+        - "API responding"
+        - "Embeddings services connected"
+        - "NO orchestration services"
+      adaptable: true
+  
+  success_criteria:
+    functional:
+      - "Documents stored when requested"
+      - "Documents retrieved when queried"
+      - "Semantic search returns relevant results"
+      - "MCP contract followed exactly"
+      - "NO workflow logic implemented"
+    
+    quality:
+      - "Storage operations < 100ms"
+      - "Search operations < 200ms"
+      - "100% passive - no autonomous actions"
+    
+    evidence:
+      - "Working storage API"
+      - "Successful document CRUD operations"
+      - "Semantic search results"
+      - "NO event handling code"
+  
+  # === CONFIRMATION REQUIREMENTS ===
+  requires_confirmation:
+    resources_needed:
+      - "PostgreSQL with pgvector"
+      - "Docker environment"
+      - "Embedding services"
+    
+    human_must_provide:
+      - "Confirmation that passive-only is correct"
+      - "Approval to remove all orchestration"
+    
+    risks_acknowledged:
+      - "KG4EPIC will not handle any workflow"
+      - "All intelligence must be in Claude Code"
+      - "ACC must handle all monitoring"
+  
+  # === AI EXECUTION INSTRUCTIONS ===
+  for_ai: |
+    CRITICAL: KG4EPIC is PASSIVE storage only!
+    
+    What KG4EPIC DOES:
+    - Stores documents when asked
+    - Retrieves documents when queried
+    - Searches documents when requested
+    - Returns results in MCP format
+    
+    What KG4EPIC DOES NOT DO:
+    - NO CONFIRM gateway (Claude Code does this)
+    - NO translation (Claude Code does this)
+    - NO event emission (Claude Code does this)
+    - NO workflow tracking (ACC does this)
+    - NO orchestration (ACC does this)
+    - NO autonomous actions (none at all)
+    
+    Think of KG4EPIC as a database with an API.
+    It's a filing cabinet, not a secretary.
+    
+    The flow from earlier shows:
+    - C (Claude) does all the work
+    - M (MCP) is just a bridge
+    - G (KG4EPIC) just stores/retrieves
+    - A (ACC) monitors C's output
+    
+    KG4EPIC never initiates anything.
+    It only responds to requests.
+  
+  # === STATUS ===
+  status: "draft"
+  
+  # === REFERENCES ===
+  based_on:
+    pattern_descriptions: ["Passive storage pattern"]
+    previous_execution_slugs: []
+    related_blueprint_slugs: ["epic_tide_v8_phase_1_t1", "epic_tide_v8_phase_1_t2", "epic_tide_v8_phase_1_t3"]
+
+# === USAGE NOTES ===
+# This blueprint correctly positions KG4EPIC as passive storage
+# All orchestration happens in Claude Code and ACC
+# KG4EPIC is just a smart filing cabinet with search

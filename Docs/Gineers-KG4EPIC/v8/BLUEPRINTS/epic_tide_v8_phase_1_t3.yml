@@ -1,11 +1,11 @@
-# BLUEPRINT: EPIC-TIDE v8 Implementation - PHASE 1 (Fresh Start)
-# Third attempt (t3) with v8-compliant architecture
-# Human-authored vision, AI-generated works
+# BLUEPRINT: KG4EPIC v8 Passive Storage System - PHASE 1
+# Third attempt (t3) - CORRECTED to be passive storage only
+# NO workflow orchestration, NO process management, ONLY storage/retrieval
 
 BLUEPRINT:
   # === METADATA ===
-  slug: "kg4epic-v8-phase1-t3"
-  name: "KG4EPIC v8 Foundation - Third Attempt"
+  slug: "kg4epic-v8-passive-storage-t3"
+  name: "KG4EPIC v8 Passive Storage System"
   
   # === PHASE MANAGEMENT ===
   phase:
@@ -15,39 +15,44 @@ BLUEPRINT:
   
   # === HUMAN SECTION (Vision & Goals) ===
   vision: |
-    Build a v8-compliant passive document store for EPIC-TIDE methodology.
-    This is a fresh start keeping only proven infrastructure (Docker, embeddings services).
-    Focus on correct implementation of v8 schema and workflow from the beginning.
+    Build a v8-compliant PASSIVE document storage and retrieval system.
+    KG4EPIC is ONLY responsible for storing and retrieving documents.
+    It does NOT handle workflow, confirmations, translations, or process flow.
     
-    We need a system where:
-    - Humans write BLUEPRINTs in YAML with clear vision
-    - AI translates them to semantic format for execution
-    - Evidence drives all progress (no time-based metrics)
-    - Clear CONFIRM gateway establishes AI autonomy boundaries
-    - Proper embedding strategy (light fields with E5, heavy content with Ada-002)
+    In the overall architecture:
+    - Claude Code (C) handles workflow and orchestration
+    - MCP Server (M) provides the interface
+    - KG4EPIC (G) is the passive storage backend
+    
+    KG4EPIC simply:
+    - Receives documents via MCP tools (blueprint-save, execution-save, etc.)
+    - Stores them with proper embeddings for semantic search
+    - Returns them when queried (blueprint-get, pattern-search, etc.)
+    - Updates them when requested (execution-update, evidence-add)
   
   goals:
-    - "Implement v8-compliant database schema (blueprints, semantic_executions, evidence)"
-    - "Create TRANSLATOR service for BLUEPRINT→semantic conversion"
-    - "Establish CONFIRM gateway for human→AI handoff"
-    - "Deploy correct embedding strategy (E5 for metadata, Ada-002 for content)"
-    - "Build evidence recording system with dual format"
+    - "Implement v8 document storage schema (blueprints, executions, evidence, patterns)"
+    - "Provide MCP-compatible CRUD operations via /api/tool endpoint"
+    - "Enable semantic search with proper embeddings (E5 for metadata, Ada-002 for content)"
+    - "Store documents exactly as received (no validation, no workflow logic)"
+    - "Return documents in MCP response format"
   
   # === AI SECTION (Technical Interpretation) ===
   scope: |
-    Technical implementation of EPIC-TIDE v8 architecture with:
-    - PostgreSQL database with v8 schema (5 core tables)
-    - TRANSLATOR service to convert YAML blueprints to semantic executions
-    - CONFIRM gateway API for human confirmation and blueprint locking
-    - Proper embedding strategy: E5 for light text, Ada-002 for documents
-    - Evidence recording with AI storage and human report generation
-    - Clean separation between human-authored and AI-consumed content
+    A pure passive storage system with:
+    - PostgreSQL database with v8 tables for document storage
+    - Single /api/tool endpoint accepting MCP tool requests
+    - CRUD operations for blueprints, executions, evidence, patterns
+    - Semantic search using dual embeddings (E5 + Ada-002)
+    - No workflow logic, no confirmations, no translations
+    - No process orchestration, no state management beyond storage
+    - Simply store what's given, return what's asked
   
   constraints:
     technical:
       database: "PostgreSQL 15 with pgvector extension"
-      schema: "v8 schema from FOUNDATION_DATASET_v8.sql"
-      deployment: "Docker Compose with 5+ containers"
+      schema: "v8 tables adapted for pure storage"
+      deployment: "Docker Compose (postgres, embeddings-e5, embeddings-ada002, api)"
       api_style: "Single /api/tool endpoint for MCP compatibility"
       embeddings:
         light: "E5-large-v2 (1024d) for names, tags, summaries"
@@ -56,7 +61,6 @@ BLUEPRINT:
         endpoint: "/api/tool (POST only)"
         request_format: '{"tool": "tool-name", "arguments": {...}}'
         response_format: '{"success": bool, "result": {"content": [...]}}'
-        tools_prefix: "blueprint-, execution-, evidence-, pattern-"
     
     resources:
       existing:
@@ -65,19 +69,22 @@ BLUEPRINT:
         - "Ada-002 embeddings service (port 8001)"
         - "PostgreSQL with pgvector"
       needed:
-        - "TRANSLATOR service"
-        - "CONFIRM gateway"
-        - "Evidence recorder"
+        - "MCP tool gateway for CRUD"
+        - "Embedding pipeline for incoming documents"
       
     boundaries:
-      must_not_change:
-        - "v8 schema structure"
-        - "BLUEPRINT→CONFIRM→EXECUTION flow"
-        - "Embedding model choices"
-      can_adapt:
-        - "API endpoint naming"
-        - "Service implementation language"
-        - "UI/reporting formats"
+      must_not:
+        - "NO workflow orchestration"
+        - "NO confirmation logic"
+        - "NO translation services"
+        - "NO state machines"
+        - "NO process management"
+        - "NO validation beyond basic field presence"
+      must:
+        - "Store any document given"
+        - "Return documents when queried"
+        - "Update documents when requested"
+        - "Generate embeddings for search"
   
   works:
     # === DATABASE FOUNDATION ===
@@ -87,150 +94,152 @@ BLUEPRINT:
       verification:
         - "Old tables (phases, paths, tides, works) dropped"
         - "pgvector extension preserved"
-        - "Database backup created if needed"
     
-    implement_v8_schema:
-      purpose: "Create v8-compliant database tables"
+    create_storage_schema:
+      purpose: "Create v8 storage tables (simplified, no workflow fields)"
       verification:
-        - "blueprints table with slug/name/yaml_content"
-        - "semantic_executions table with embeddings"
-        - "confirmation_records table for audit"
-        - "evidence_records table with dual format"
-        - "patterns table for ML format"
+        - "blueprints table (id, slug, yaml_content, embeddings, metadata)"
+        - "executions table (id, blueprint_id, content, embeddings, metadata)"
+        - "evidence table (id, execution_id, content, artifacts, metadata)"
+        - "patterns table (id, content, embeddings, applicability, metadata)"
+        - "All tables have created_at, updated_at"
     
-    # === TRANSLATOR SERVICE ===
+    # === MCP TOOL GATEWAY ===
     
-    create_translator_service:
-      purpose: "Build service to convert BLUEPRINT YAML to semantic format"
+    implement_tool_router:
+      purpose: "Create /api/tool endpoint that routes to handlers"
       verification:
-        - "Parses YAML blueprints correctly"
-        - "Generates semantic_summary from scope"
-        - "Extracts semantic_tags from content"
-        - "Creates work_atoms from works section"
+        - "POST /api/tool accepts {tool, arguments}"
+        - "Returns {success, result} or {success, error}"
+        - "Routes to appropriate handler by tool name"
+        - "No authentication required (passive storage)"
     
-    implement_semantic_generation:
-      purpose: "Generate semantic fields and embeddings"
+    implement_storage_tools:
+      purpose: "Create handlers for document storage operations"
       verification:
-        - "Creates embedding_summary with Ada-002"
-        - "Creates embedding_full for complete content"
-        - "Stores in semantic_executions table"
-        - "Links to source blueprint"
+        - "blueprint-save: Store blueprint with embeddings"
+        - "blueprint-get: Retrieve by id or slug"
+        - "blueprint-list: Return all blueprints"
+        - "blueprint-search: Semantic search on blueprints"
+        - "execution-save: Store execution"
+        - "execution-update: Update execution content"
+        - "execution-get: Retrieve by id"
+        - "evidence-add: Add evidence to execution"
+        - "pattern-save: Store pattern"
+        - "pattern-search: Find similar patterns"
     
-    # === CONFIRM GATEWAY ===
+    # === EMBEDDING PIPELINE ===
     
-    build_confirm_api:
-      purpose: "Create confirmation endpoint for human handoff"
+    create_embedding_generator:
+      purpose: "Generate embeddings when documents are saved"
       verification:
-        - "POST /v8/confirm/{blueprint_id} works"
-        - "Locks blueprint (immutable after confirm)"
-        - "Creates confirmation_record"
-        - "Triggers TRANSLATOR automatically"
+        - "Extract metadata fields (name, tags, summary)"
+        - "Generate E5 embeddings for metadata"
+        - "Generate Ada-002 embedding for full content"
+        - "Store both embeddings with document"
     
-    implement_lock_mechanism:
-      purpose: "Ensure blueprints cannot change after confirmation"
+    implement_dual_search:
+      purpose: "Enable semantic search with both embedding types"
       verification:
-        - "Blueprint.locked flag set to true"
-        - "SHA-256 hash stored for integrity"
-        - "API rejects modifications to locked blueprints"
-        - "Clear error messages for attempts"
+        - "Metadata search uses E5 embeddings"
+        - "Content search uses Ada-002 embeddings"
+        - "Combined search with weighted scores"
+        - "Returns documents sorted by similarity"
     
-    # === EMBEDDING STRATEGY ===
+    # === STORAGE OPERATIONS ===
     
-    configure_light_embeddings:
-      purpose: "Set up E5 embeddings for metadata fields"
+    implement_crud_operations:
+      purpose: "Basic Create, Read, Update, Delete for all document types"
       verification:
-        - "blueprint.name → name_embedding_e5"
-        - "semantic_tags[] → tags_embedding_e5"
-        - "Fast search on light fields works"
+        - "CREATE: Accept document, generate embeddings, store"
+        - "READ: Retrieve by id, slug, or criteria"
+        - "UPDATE: Replace content, regenerate embeddings"
+        - "DELETE: Soft delete with deleted_at timestamp"
     
-    configure_heavy_embeddings:
-      purpose: "Set up Ada-002 for document content"
+    handle_document_metadata:
+      purpose: "Store and index document metadata for filtering"
       verification:
-        - "yaml_content → embedding_full"
-        - "semantic_summary → embedding_summary"
-        - "Semantic search on content works"
+        - "Extract and store: author, version, tags, status"
+        - "Enable filtering by metadata fields"
+        - "Support range queries on timestamps"
+        - "No business logic, just storage"
     
-    # === EVIDENCE SYSTEM ===
+    # === RESPONSE FORMATTING ===
     
-    create_evidence_recorder:
-      purpose: "Build API for AI to submit evidence"
+    format_mcp_responses:
+      purpose: "Ensure all responses follow MCP format"
       verification:
-        - "POST /v8/evidence/record works"
-        - "Stores structured evidence in database"
-        - "Links to execution and work_key"
-        - "Supports artifact URLs"
+        - "Success responses have result.content array"
+        - "Error responses have error string"
+        - "Content items have type and text fields"
+        - "Consistent format across all tools"
     
-    implement_report_generator:
-      purpose: "Generate human-readable reports from evidence"
+    # === TESTING ===
+    
+    test_storage_operations:
+      purpose: "Verify all storage operations work correctly"
       verification:
-        - "GET /v8/evidence/report/{execution_id}"
-        - "Markdown format with clear sections"
-        - "Includes verification results"
-        - "Shows progress metrics"
+        - "Save document → generates embeddings → stores"
+        - "Get document → returns with metadata"
+        - "Search → returns similar documents"
+        - "Update → replaces content and embeddings"
     
-    # === INTEGRATION ===
-    
-    update_docker_compose:
-      purpose: "Add new services to Docker stack"
+    test_mcp_compliance:
+      purpose: "Ensure MCP format compliance"
       verification:
-        - "translator service container added"
-        - "All services communicate correctly"
-        - "Health checks for new services"
-        - "Proper network configuration"
-    
-    create_v8_api_routes:
-      purpose: "Implement all v8 workflow endpoints"
-      verification:
-        - "/v8/blueprint/submit - accepts YAML"
-        - "/v8/confirm/{id} - locks and triggers translation"
-        - "/v8/execution/status - shows AI progress"
-        - "/v8/evidence/* - evidence management"
-    
-    # === VALIDATION ===
-    
-    test_complete_workflow:
-      purpose: "Validate entire v8 flow end-to-end"
-      verification:
-        - "Submit sample blueprint"
-        - "Confirm and lock it"
-        - "TRANSLATOR creates semantic execution"
-        - "Evidence can be recorded"
-        - "Reports generate correctly"
-    
-    verify_embedding_search:
-      purpose: "Ensure semantic search works correctly"
-      verification:
-        - "Light field search with E5 is fast"
-        - "Content search with Ada-002 is accurate"
-        - "Combined search strategies work"
-        - "Performance meets requirements"
+        - "Request format validated"
+        - "Response format correct"
+        - "Error handling follows MCP spec"
+        - "All tools accessible via /api/tool"
   
   success_criteria:
-    - "v8 schema fully implemented and validated"
-    - "Complete BLUEPRINT→CONFIRM→EXECUTION flow working"
-    - "TRANSLATOR service operational"
-    - "Proper embedding strategy (E5 for light, Ada-002 for heavy)"
-    - "Evidence recording and reporting functional"
-    - "All v8 endpoints tested and documented"
-    - "Clean separation of human/AI concerns"
+    - "PostgreSQL schema for passive document storage"
+    - "Single /api/tool endpoint handling all operations"
+    - "MCP request/response format strictly followed"
+    - "Documents stored exactly as received"
+    - "Embeddings generated automatically on save"
+    - "Semantic search working with dual embeddings"
+    - "NO workflow logic or process orchestration"
+    - "Pure passive storage system"
   
   evidence_required:
-    - "Database schema migration screenshots"
-    - "API endpoint test results"
-    - "TRANSLATOR service logs showing conversion"
-    - "Confirmation record in database"
-    - "Semantic execution with embeddings"
-    - "Evidence records with artifacts"
-    - "Generated human report sample"
-    - "Docker compose ps showing all services"
-    - "Semantic search query results"
+    - "Database schema showing simple storage tables"
+    - "MCP tool request/response examples"
+    - "Document save with auto-generated embeddings"
+    - "Semantic search results showing similarity scores"
+    - "CRUD operations via /api/tool"
+    - "Docker compose with 4 services running"
+    - "No workflow or confirmation logic in codebase"
   
   # === METADATA FOR AI ===
   for_ai: |
-    This is a fresh start (t3 = third attempt) to properly implement v8.
-    Previous attempts (t1, t2) had schema misalignment issues.
-    Keep existing Docker infrastructure but replace entire database schema.
-    Focus on clean v8 implementation without legacy baggage.
-    Use existing E5 and Ada-002 services but with correct field mapping.
-    TRANSLATOR can be Python (FastAPI) or Node.js (Express).
-    Evidence recorder should support both structured data and file artifacts.
+    CRITICAL: KG4EPIC is a PASSIVE STORAGE SYSTEM ONLY
+    
+    It does NOT:
+    - Manage workflow or process flow
+    - Handle confirmations or approvals
+    - Translate blueprints to executions
+    - Orchestrate EPIC-TIDE methodology
+    - Validate business logic
+    - Enforce state transitions
+    
+    It ONLY:
+    - Stores documents (blueprints, executions, evidence, patterns)
+    - Generates embeddings for semantic search
+    - Returns documents when queried
+    - Updates documents when requested
+    
+    Think of it as a smart database with semantic search, NOT a workflow engine.
+    
+    MCP Tools to implement (all CRUD only):
+    - blueprint-save, blueprint-get, blueprint-list, blueprint-search
+    - execution-save, execution-update, execution-get, execution-list
+    - evidence-add, evidence-get, evidence-list
+    - pattern-save, pattern-search, pattern-get
+    
+    Embedding strategy:
+    - E5 for: document name, tags, summary (light metadata)
+    - Ada-002 for: full document content (heavy text)
+    
+    The workflow (CONFIRM, TRANSLATOR, etc.) happens in Claude Code, NOT here.
+    KG4EPIC just stores what it's given and returns what it's asked for.

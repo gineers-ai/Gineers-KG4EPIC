@@ -15,23 +15,24 @@ BLUEPRINT:
   
   # === HUMAN SECTION (Vision & Goals) ===
   vision: |
-    Create a clean, correct implementation of KG4EPIC using EPIC-TIDE v8 architecture.
-    This fresh start will properly demonstrate the CONFIRM gateway, autonomous AI execution,
-    and the simplified 3-document model (BLUEPRINT → EXECUTION → PATTERN).
+    Create a clean, PASSIVE document storage system for EPIC-TIDE v8.
+    KG4EPIC is purely infrastructure - it stores blueprints, executions, and patterns
+    that are created by EXTERNAL systems (Claude, humans, etc).
     
-    We're building the foundation that actually dogfoods v8 principles, not retrofitting
-    old v5.1 concepts. The system will show clear human-AI boundaries through the CONFIRM
-    gateway and enable AI to autonomously retry within TIDEs without human intervention.
+    KG4EPIC does NOT execute anything. It does NOT manage workflows. It does NOT
+    implement CONFIRM gates. It is a sophisticated filing cabinet with semantic search,
+    responding to MCP tool requests to store and retrieve documents.
     
-    Key focus: Simplicity, correctness, and true v8 alignment.
+    Key focus: PASSIVE storage, fast retrieval, MCP compatibility.
   
   goals:
-    - "Deploy fresh v8 database schema with proper tables (blueprints, semantic_executions, etc.)"
-    - "Implement CONFIRM gateway for explicit human-AI handoff with blueprint locking"
-    - "Create blueprint management API with YAML storage and semantic translation"
-    - "Enable autonomous AI execution within TIDEs (multiple attempts, no human intervention)"
-    - "Integrate existing embedding services (E5 and ada-002) with new v8 structure"
-    - "Demonstrate evidence-driven progress tracking without time-based metrics"
+    - "Deploy v8 database schema as PASSIVE storage (blueprints, executions, patterns tables)"
+    - "Create /api/tool endpoint for MCP server integration"
+    - "Implement CRUD operations for all v8 document types"
+    - "Enable semantic search using existing embedding services (E5 and ada-002)"
+    - "Store documents when Claude/MCP requests storage"
+    - "Retrieve documents when Claude/MCP requests retrieval"
+    - "NO execution logic - KG4EPIC only stores what others execute"
   
   # === AI SECTION (Generated from Vision) ===
   # NOTE: AI will expand this section after CONFIRM
@@ -159,6 +160,16 @@ BLUEPRINT:
         - "Semantic search using both embedding types"
         - "No changes to embedding services themselves"
     
+    # MCP Compatibility Layer
+    create_mcp_adapter:
+      purpose: "Adapt v8 operations to MCP tool names"
+      verification:
+        - "Tool 'phase-create' maps to blueprint creation"
+        - "Tool 'work-create' creates work atoms in blueprints"
+        - "Tool 'tide-create' starts semantic execution"
+        - "Tool 'search-semantic' queries both E5 and ada-002 embeddings"
+        - "All MCP tools return proper content array format"
+    
     # Testing & Validation
     validate_v8_flow:
       purpose: "End-to-end test of v8 architecture"
@@ -167,6 +178,14 @@ BLUEPRINT:
         - "TIDE autonomous retry demonstrated"
         - "No human intervention after CONFIRM"
         - "Evidence properly collected"
+    
+    validate_mcp_integration:
+      purpose: "Test MCP server compatibility"
+      verification:
+        - "MCP can create entities through /api/tool"
+        - "MCP can list and search entities"
+        - "Response format accepted by MCP server"
+        - "Error handling works correctly"
   
   # === SUCCESS CRITERIA ===
   success_criteria:
@@ -177,6 +196,8 @@ BLUEPRINT:
     - "Existing embedding services integrated"
     - "Clear human-AI boundary established"
     - "No remnants of v5.1 structure"
+    - "MCP server can interact through /api/tool endpoint"
+    - "All MCP tools return correct response format"
   
   # === EVIDENCE REQUIRED ===
   evidence_required:
@@ -186,6 +207,8 @@ BLUEPRINT:
     - "Evidence report in both AI and human formats"
     - "Semantic search results using dual embeddings"
     - "Complete v8 flow from blueprint to evidence"
+    - "MCP tool test showing proper request/response format"
+    - "Successful MCP operations through /api/tool"
   
   # === FOR AI AFTER CONFIRM ===
   for_ai: |
@@ -208,6 +231,9 @@ BLUEPRINT:
     - Everything else is fresh implementation
     - Focus on simplicity and correctness over features
     - True dogfooding of v8 principles is the goal
+    - MCP integration is CRITICAL for Claude Desktop usage
+    - Single /api/tool endpoint must handle all MCP operations
+    - Response format must strictly follow MCP contract
 
 # === CONFIRMATION GATE ===
 # After human reviews and confirms this blueprint:
