@@ -1,0 +1,147 @@
+# PATTERN Template v8 - AI-Only Machine Learning Format
+# Extracted automatically from successful executions
+# Never shown to humans, used for AI optimization
+
+PATTERN:
+  # === IDENTIFICATION ===
+  id: "[UUID - auto-generated]"
+  version: "8.0"
+  pattern_hash: "[SHA-256 of pattern signature]"
+  
+  # === NO HUMAN FIELDS ===
+  # No 'name', 'description', or 'documentation'
+  # This is pure machine learning data
+  
+  # === EMBEDDINGS (Core Pattern Representation) ===
+  embeddings:
+    problem_space: "[1536-dim vector]"  # What problem this solves
+    solution_space: "[1536-dim vector]"  # How it solves it
+    context_space: "[1536-dim vector]"  # When applicable
+    
+    # Multi-model embeddings for robust matching
+    embeddings_e5: "[1024-dim vector]"
+    embeddings_ada002: "[1536-dim vector]"
+  
+  # === PATTERN SIGNATURE ===
+  signature:
+    # Structured representation for exact matching
+    input_conditions: ["condition1_hash", "condition2_hash"]
+    transformation_steps: ["step1_hash", "step2_hash"]
+    output_guarantees: ["guarantee1_hash", "guarantee2_hash"]
+  
+  # === APPLICABILITY SCORING ===
+  applicability:
+    score: 0.85  # Overall applicability (0.0-1.0)
+    
+    conditions:
+      # Hashed conditions for privacy/efficiency
+      required: ["condition_hash_1", "condition_hash_2"]
+      beneficial: ["condition_hash_3"]
+      neutral: ["condition_hash_4"]
+      harmful: ["condition_hash_5"]  # Anti-patterns
+    
+    confidence_scores:
+      problem_match: 0.9
+      solution_fit: 0.8
+      context_alignment: 0.85
+  
+  # === STATISTICAL EVIDENCE ===
+  statistics:
+    # Numerical evidence only, no descriptions
+    usage_count: 42
+    success_count: 38
+    failure_count: 4
+    success_rate: 0.905
+    
+    performance_metrics:
+      avg_execution_time_ms: 234
+      avg_token_usage: 1567
+      avg_retry_count: 1.2
+      
+    reliability_metrics:
+      consistency_score: 0.92
+      robustness_score: 0.88
+      adaptability_score: 0.75
+  
+  # === SOURCE TRACKING ===
+  sources:
+    # UUIDs only, no human-readable references
+    extracted_from: ["execution_uuid_1", "execution_uuid_2", "execution_uuid_3"]
+    validated_in: ["execution_uuid_4", "execution_uuid_5"]
+    failed_in: ["execution_uuid_6"]
+    
+    extraction_criteria:
+      min_occurrences: 3
+      min_success_rate: 0.8
+      similarity_threshold: 0.85
+  
+  # === EVOLUTION TRACKING ===
+  evolution:
+    version_number: 1
+    previous_version_id: null
+    
+    mutations:
+      # How pattern evolved
+      - type: "parameter_adjustment"
+        delta: {"param1": 0.1}
+      - type: "step_addition"
+        position: 3
+    
+    fitness_score: 0.87  # Evolutionary fitness
+    selection_pressure: 0.65  # How strongly selected
+  
+  # === RELATIONSHIP GRAPH ===
+  relationships:
+    # Pattern-to-pattern relationships (UUIDs only)
+    complements: ["pattern_uuid_1"]  # Works well with
+    conflicts: ["pattern_uuid_2"]  # Don't use together
+    subsumes: ["pattern_uuid_3"]  # This replaces that
+    specialized_from: "pattern_uuid_4"  # Parent pattern
+    
+    clustering:
+      cluster_id: "cluster_uuid"
+      distance_to_centroid: 0.23
+      cluster_confidence: 0.91
+  
+  # === OPTIMIZATION HINTS ===
+  optimization:
+    # AI-only optimization data
+    cache_key: "[hash_for_caching]"
+    precomputed_results: {}  # Cached computations
+    
+    execution_hints:
+      parallelizable: true
+      gpu_beneficial: false
+      memory_intensive: false
+      
+    cost_estimates:
+      compute_units: 12
+      api_calls: 3
+      token_budget: 2000
+  
+  # === TEMPORAL DYNAMICS ===
+  temporal:
+    created_at: "[timestamp]"
+    last_applied: "[timestamp]"
+    last_validated: "[timestamp]"
+    
+    decay_rate: 0.05  # How fast pattern becomes stale
+    half_life_days: 30
+    refresh_priority: 0.7
+  
+  # === INTERNAL STATE ===
+  _internal:
+    # Private AI state, never exposed
+    gradient_history: []  # Learning gradients
+    weight_adjustments: []  # Neural adjustments
+    activation_patterns: []  # Network activations
+    embedding_drift: 0.02  # How much embeddings changed
+
+# === USAGE NOTES ===
+# 1. NEVER shown to humans
+# 2. Extracted automatically after 3+ successful uses
+# 3. Pure machine learning data structure
+# 4. Used for AI execution optimization
+# 5. Evolves through automated selection
+# 6. No human-readable strings except structure
+# 7. All matching via embeddings and hashes

@@ -1,0 +1,178 @@
+# EXECUTION Template v8 - AI-Optimized Semantic Format
+# Created after CONFIRM, tracks autonomous AI execution
+# No human intervention during TIDE execution
+
+EXECUTION:
+  # === IDENTIFICATION ===
+  id: "[UUID - auto-generated]"
+  version: "8.0"
+  blueprint_id: "[UUID of locked blueprint]"
+  
+  # === TIDE MANAGEMENT ===
+  tide:
+    number: [1,2,3...]  # Attempt number within same goal
+    previous_tide_id: "[UUID of previous attempt]"
+    can_continue: true  # false triggers PHASE change request
+    
+  # === SEMANTIC LAYER (AI-Optimized) ===
+  semantic:
+    summary: "[AI-generated execution summary]"
+    tags: ["tag1", "tag2", "tag3"]
+    key_decisions: ["decision1", "decision2"]
+    key_constraints: ["constraint1", "constraint2"]
+    
+    # Embeddings for similarity search
+    embeddings:
+      summary: "[1536-dim vector]"
+      full: "[1536-dim vector]"
+  
+  # === EXECUTION STATUS ===
+  status: "in_progress"  # pending → in_progress → success|partial|failed
+  started_at: "[timestamp]"
+  completed_at: "[timestamp or null]"
+  
+  # === WORK TRACKING (Atomized) ===
+  work_attempts:
+    work_key_1:
+      status: "complete"  # not_started → in_progress → complete|failed|blocked
+      attempt_count: 1
+      
+      actions_taken:
+        - "[Specific action 1]"
+        - "[Specific action 2]"
+      
+      evidence:
+        artifacts: ["path/to/file1", "path/to/file2"]
+        hashes: {"file1": "sha256_hash"}
+        verification: "passed"  # passed|failed|pending
+        
+      metrics:
+        duration_ms: 1234
+        tokens_used: 567
+        api_calls: 3
+      
+      error: null  # Error message if failed
+      blocker: null  # Blocker description if blocked
+      
+    work_key_2:
+      status: "in_progress"
+      attempt_count: 2  # Retrying
+      adaptations:
+        - "[How approach was modified]"
+  
+  # === EVIDENCE COLLECTION ===
+  evidence_summary:
+    total_works: 10
+    completed: 7
+    failed: 1
+    in_progress: 2
+    
+    artifacts_collected:
+      - type: "code"
+        count: 5
+        paths: ["src/..."]
+      - type: "test"
+        count: 3
+        paths: ["test/..."]
+    
+    verification_results:
+      passed: 6
+      failed: 1
+      pending: 3
+  
+  # === CONSTRAINT VALIDATION ===
+  constraints_validated:
+    technical:
+      database: "✓ PostgreSQL with pgvector"
+      deployment: "✓ Docker containers"
+      api_style: "✓ REST POST-only"
+    
+    resources:
+      compute: "✓ Within limits"
+      attempts: "3/10 TIDEs used"
+    
+    boundaries:
+      violations: []  # Any boundary violations
+  
+  # === SUCCESS CRITERIA PROGRESS ===
+  criteria_progress:
+    functional:
+      - criterion: "[Criterion 1]"
+        status: "met"
+        evidence: ["artifact1", "artifact2"]
+      
+      - criterion: "[Criterion 2]"
+        status: "not_met"
+        gap: "[What's missing]"
+    
+    quality:
+      - criterion: "[Performance metric]"
+        status: "met"
+        measurement: "150ms average"
+  
+  # === LEARNINGS (For Adaptation) ===
+  learnings:
+    technical:
+      - "[Technical discovery]"
+      - "[Performance insight]"
+    
+    process:
+      - "[Process improvement]"
+      - "[Workflow optimization]"
+    
+    blockers:
+      - "[Identified blocker]"
+      - "[Workaround found]"
+  
+  # === ADAPTATION DECISIONS ===
+  adaptations:
+    within_tide:
+      # Adaptations AI made autonomously
+      - type: "reorder"
+        reason: "[Why reordered]"
+        
+      - type: "retry"
+        work: "work_key_1"
+        reason: "[Why retried]"
+    
+    requires_phase_change:
+      # null if can continue, otherwise:
+      reason: "[Why goal is unachievable]"
+      suggested_changes:
+        - "[Proposed change 1]"
+        - "[Proposed change 2]"
+  
+  # === NEXT STEPS ===
+  next_execution:
+    continue_tide: true  # false triggers PHASE change
+    
+    if_continuing:
+      focus: "[What to focus on next]"
+      priority_works: ["work_key_3", "work_key_4"]
+      adaptations_planned:
+        - "[Planned adaptation]"
+    
+    if_phase_change:
+      new_goal_needed: "[Description]"
+      constraints_to_modify: ["constraint1"]
+      success_criteria_to_change: ["criterion1"]
+  
+  # === PATTERN EXTRACTION READINESS ===
+  pattern_candidates:
+    # Successful approaches for pattern extraction
+    - work: "work_key_1"
+      success_rate: 1.0
+      reusability_score: 0.85
+      
+    - work: "work_key_2"
+      success_rate: 0.5
+      reusability_score: 0.3
+
+# === USAGE NOTES ===
+# 1. Created automatically after BLUEPRINT CONFIRM
+# 2. AI executes autonomously, updating this document
+# 3. No human edits during execution
+# 4. Multiple TIDEs (attempts) allowed for same goal
+# 5. PHASE change request triggers human CONFIRM
+# 6. Evidence stored in AI-optimized format
+# 7. Human reports generated on demand only

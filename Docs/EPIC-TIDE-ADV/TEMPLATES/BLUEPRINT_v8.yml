@@ -1,0 +1,135 @@
+# BLUEPRINT Template v8 - Hybrid Human-AI Architecture
+# Human writes vision/scope, AI generates works/constraints
+# After CONFIRM, this becomes immutable
+
+BLUEPRINT:
+  # === METADATA (System-Generated) ===
+  id: "[UUID - auto-generated]"
+  version: "8.0"
+  slug: "[human-friendly-url]"  # e.g., 'kg4epic-phase2'
+  name: "[Human-readable name]"  # e.g., 'KG4EPIC Phase 2'
+  
+  # === PHASE MANAGEMENT ===
+  phase:
+    number: [1,2,3...]  # Which PHASE this belongs to
+    previous_phase_id: "[UUID of previous phase, if any]"
+    goal_change: false  # true if this is a PHASE change (needs CONFIRM)
+  
+  # === HUMAN SECTION (Written by Human) ===
+  vision: |
+    [HUMAN WRITES: The high-level vision and goals]
+    What problem are we solving?
+    What does success look like?
+    Why is this important?
+  
+  goals:
+    - "[Specific goal 1]"
+    - "[Specific goal 2]"
+    - "[Specific goal 3]"
+  
+  # === AI SECTION (Generated from Vision) ===
+  scope: |
+    [AI GENERATES: Technical interpretation of vision]
+    Concrete technical objectives derived from human vision
+  
+  constraints:
+    # AI suggests based on vision, human confirms
+    technical:
+      database: "[e.g., PostgreSQL with pgvector]"
+      deployment: "[e.g., Docker containers]"
+      api_style: "[e.g., REST with POST-only]"
+    
+    resources:
+      compute: "[Available resources]"
+      time_box: "[Maximum TIDE attempts before escalation]"
+      
+    boundaries:
+      must_not_change: ["List of immutable elements"]
+      can_adapt: ["List of flexible elements"]
+  
+  works:
+    # AI generates from vision, atomic and verifiable
+    work_key_1:
+      purpose: "[What this achieves]"
+      prerequisites: ["[dependency_1]", "[dependency_2]"]
+      verification:
+        - "[Evidence that proves completion]"
+        - "[Measurable outcome]"
+      adaptable: true  # Can AI modify approach?
+    
+    work_key_2:
+      purpose: "[What this achieves]"
+      prerequisites: ["[work_key_1]"]
+      verification:
+        - "[Evidence requirement]"
+      adaptable: false  # Must follow exact approach
+  
+  success_criteria:
+    # AI defines measurable criteria from vision
+    functional:
+      - "[Measurable outcome 1]"
+      - "[Measurable outcome 2]"
+    
+    quality:
+      - "[Performance metric]"
+      - "[Reliability metric]"
+    
+    evidence:
+      - "[Required artifact 1]"
+      - "[Required artifact 2]"
+  
+  # === CONFIRMATION REQUIREMENTS ===
+  requires_confirmation:
+    resources_needed:
+      - "[API keys]"
+      - "[Database access]"
+      - "[Service credentials]"
+    
+    human_must_provide:
+      - "[Critical decision]"
+      - "[Resource allocation]"
+    
+    risks_acknowledged:
+      - "[Potential risk 1]"
+      - "[Potential risk 2]"
+  
+  # === AUTONOMY BOUNDARIES ===
+  tide_autonomy:
+    # What AI can do without asking
+    allowed_adaptations:
+      - "Retry failed works"
+      - "Reorder execution sequence"
+      - "Skip optional works"
+      - "Add clarifying steps"
+    
+    # What triggers PHASE change (needs new CONFIRM)
+    phase_triggers:
+      - "Success criteria change"
+      - "Core constraint violation"
+      - "New feature addition"
+      - "Technology stack change"
+  
+  # === AI EXECUTION INSTRUCTIONS ===
+  for_ai: |
+    [Instructions for autonomous execution]
+    - Priority order for works
+    - Critical success factors
+    - Known gotchas to avoid
+    - Adaptation strategies
+  
+  # === STATUS TRACKING ===
+  status: "draft"  # draft → pending_confirm → confirmed → in_progress → complete
+  
+  # === REFERENCES ===
+  based_on:
+    patterns: ["[pattern_id]"]  # Patterns to apply
+    executions: ["[execution_id]"]  # Previous attempts
+    blueprints: ["[blueprint_id]"]  # Related blueprints
+
+# === USAGE NOTES ===
+# 1. Human fills vision/goals section
+# 2. AI generates scope/constraints/works/criteria
+# 3. Human reviews and adjusts
+# 4. CONFIRM locks this blueprint
+# 5. AI begins autonomous execution (TIDE)
+# 6. No changes after CONFIRM without new PHASE
