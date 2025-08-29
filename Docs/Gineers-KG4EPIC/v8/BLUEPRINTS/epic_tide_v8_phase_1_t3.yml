@@ -61,6 +61,13 @@ BLUEPRINT:
         endpoint: "/api/tool (POST only)"
         request_format: '{"tool": "tool-name", "arguments": {...}}'
         response_format: '{"success": bool, "result": {"content": [...]}}'
+        error_codes: ["REQUIRED_FIELD_MISSING", "ENTITY_NOT_FOUND", "INVALID_FORMAT", "DATABASE_ERROR"]
+      performance:
+        storage_latency: "< 100ms"
+        retrieval_latency: "< 50ms"
+        search_latency: "< 200ms"
+        max_document_size: "10MB"
+        max_batch_size: "100 documents"
     
     resources:
       existing:
@@ -96,13 +103,13 @@ BLUEPRINT:
         - "pgvector extension preserved"
     
     create_storage_schema:
-      purpose: "Create v8 storage tables (simplified, no workflow fields)"
+      purpose: "Create v8 storage tables with specific schema"
       verification:
-        - "blueprints table (id, slug, yaml_content, embeddings, metadata)"
-        - "executions table (id, blueprint_id, content, embeddings, metadata)"
-        - "evidence table (id, execution_id, content, artifacts, metadata)"
-        - "patterns table (id, content, embeddings, applicability, metadata)"
-        - "All tables have created_at, updated_at"
+        - "blueprints: id(uuid), slug(varchar), name(varchar), yaml_content(text), metadata(jsonb), tags(text[]), embedding_name(vector1024), embedding_content(vector1536), created_at, updated_at"
+        - "executions: id(uuid), blueprint_id(uuid), tide_number(int), status(varchar), content(jsonb), embedding_summary(vector1536), created_at, updated_at"
+        - "evidence: id(uuid), execution_id(uuid), work_key(varchar), evidence_type(varchar), content(jsonb), artifacts(jsonb), created_at"
+        - "patterns: id(uuid), problem(text), solution(text), applicability_score(float), embedding_problem(vector1536), embedding_solution(vector1536), usage_count(int), created_at"
+        - "Indexes: btree on slugs, ivfflat on all vector columns, gin on jsonb fields"
     
     # === MCP TOOL GATEWAY ===
     
@@ -127,6 +134,8 @@ BLUEPRINT:
         - "evidence-add: Add evidence to execution"
         - "pattern-save: Store pattern"
         - "pattern-search: Find similar patterns"
+        - "health-check: Return system status"
+        - "validate-structure: Check document format (no business logic)"
     
     # === EMBEDDING PIPELINE ===
     

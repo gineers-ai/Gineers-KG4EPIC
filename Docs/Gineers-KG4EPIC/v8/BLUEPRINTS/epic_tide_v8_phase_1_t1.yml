@@ -1,267 +1,250 @@
-# BLUEPRINT: EPIC-TIDE v8 Pure Implementation - Phase 1 Trial 1
-# Human vision with AI-generated works following v8 architecture
+# BLUEPRINT: KG4EPIC v8 as Passive Storage System
+# Pure document storage with NO orchestration, NO events, NO flow control
 
 BLUEPRINT:
   # === METADATA ===
-  # NOTE: id and version added by storage layer (Gineers-KG), not by AI
-  slug: "epic-tide-v8-phase-1-t1"
-  name: "EPIC-TIDE v8 Pure Implementation - Phase 1"
+  slug: "kg4epic-v8-passive-storage"
+  name: "KG4EPIC v8 - Passive Document Storage"
   
   # === PHASE MANAGEMENT ===
   phase:
     number: 1
-    previous_phase_slug: null  # First phase
-    goal_change: false  # New project, not a change
+    previous_phase_slug: null
+    goal_change: false
   
-  # === HUMAN SECTION (Written by Human) ===
+  # === HUMAN SECTION ===
   vision: |
-    Implement a pure EPIC-TIDE v8 system for KG4EPIC that demonstrates:
-    - The CONFIRM gateway for human→AI handoff
-    - Hybrid YAML/Semantic storage architecture
-    - Terminal as event bus with structured output
-    - Full AI autonomy within TIDE boundaries
-    - Evidence-based progress tracking
+    Build KG4EPIC as a PASSIVE storage system that:
+    - Stores documents (blueprints, executions, patterns) when asked
+    - Retrieves documents when queried
+    - Performs semantic search when requested
+    - DOES NOT handle events, flow control, or orchestration
     
-    This is dogfooding - we use v8 to build v8's reference implementation.
-    Success means a working system that stores and retrieves EPIC-TIDE documents
-    with proper v8 architecture including CONFIRM, semantic layer, and patterns.
+    KG4EPIC is a library, not a conductor. It holds documents and 
+    returns them when asked. All intelligence and flow control 
+    happens in Claude Code and ACC, not here.
   
   goals:
-    - "Deploy v8 database schema with hybrid storage"
-    - "Implement CONFIRM gateway with blueprint locking"
-    - "Create YAML→Semantic translator for AI optimization"
-    - "Build terminal event emitter for ACC monitoring"
-    - "Demonstrate full TIDE execution with evidence"
+    - "Store v8 documents with proper schema"
+    - "Retrieve documents via MCP tools"
+    - "Search documents semantically"
+    - "Return results in MCP format"
+    - "NO orchestration or event handling"
   
-  # === AI SECTION (Generated from Vision) ===
+  # === AI SECTION ===
   scope: |
-    Technical implementation of EPIC-TIDE v8 architecture:
-    - PostgreSQL database with v8 schema (blueprints, semantic_executions, etc.)
-    - CONFIRM API endpoint that locks blueprints and triggers translation
-    - Semantic layer that converts YAML to AI-optimized format
-    - Structured terminal output for ACC monitoring
-    - Evidence collection and async pattern extraction
+    A passive document storage API that:
+    - Accepts documents via MCP tools and stores them
+    - Returns documents when queried
+    - Performs semantic search using embeddings
+    - Maintains data integrity with UUIDs
+    - Provides zero workflow logic
   
   constraints:
     technical:
-      database: "PostgreSQL 15 with pgvector extension"
-      storage: "Hybrid YAML (human) + Semantic (AI)"
-      api: "POST-only endpoints with CONFIRM gateway"
-      embeddings: "E5-large-v2 (1024) + ada-002 (1536)"
-      deployment: "Docker compose multi-container"
+      database: "PostgreSQL 15 with pgvector"
+      api: "Single /api/tool endpoint (MCP contract)"
+      embeddings: "E5 (1024) + ada-002 (1536) services"
+      deployment: "Docker compose"
     
     resources:
-      max_tide_attempts: 10
-      time_box: "No deadlines - evidence-driven only"
+      time_box: "Evidence-driven only"
       
     boundaries:
-      must_not_change: ["v8 architecture", "CONFIRM gateway", "hybrid storage"]
-      can_adapt: ["implementation details", "service ports", "testing approach"]
+      must_not_have: ["event handling", "flow control", "orchestration", "CONFIRM logic"]
+      must_have: ["storage", "retrieval", "search", "MCP format"]
   
   works:
-    implement_mcp_gateway:
-      purpose: "Create single /api/tool endpoint for MCP"
-      prerequisites: []
-      verification:
-        - "POST /api/tool endpoint responds"
-        - "Request format {tool, arguments} accepted"
-        - "Response format {success, result/error} returned"
-        - "Content array structure working"
-      adaptable: false  # Must follow MCP contract exactly
+    # === DATABASE FOUNDATION ===
     
-    deploy_v8_schema:
-      purpose: "Create database with v8 tables"
+    drop_legacy_schema:
+      purpose: "Remove old v5.1 tables to start fresh"
       prerequisites: []
       verification:
-        - "All v8 tables created (blueprints, semantic_executions, etc.)"
+        - "Old tables (phases, paths, tides, works, path_works) dropped"
+        - "pgvector extension preserved"
+        - "Clean slate for v8"
+      adaptable: false
+    
+    deploy_v8_database:
+      purpose: "Create database for document storage"
+      prerequisites: ["drop_legacy_schema"]
+      verification:
+        - "Tables: blueprints, executions, patterns, evidence"
         - "UUID generation working"
-        - "Indexes created for performance"
-      adaptable: false  # Must follow v8 schema exactly
+        - "pgvector indexes created"
+        - "NO workflow or state tables"
+      adaptable: false
     
-    implement_blueprint_storage:
-      purpose: "Store YAML blueprints with locking"
-      prerequisites: ["deploy_v8_schema"]
-      verification:
-        - "YAML blueprints stored with UUID + slug"
-        - "Locking mechanism prevents changes after CONFIRM"
-        - "API endpoint /v8/blueprints working"
-      adaptable: true
+    # === MCP GATEWAY ===
     
-    create_confirm_gateway:
-      purpose: "Implement CONFIRM that triggers AI autonomy"
-      prerequisites: ["implement_blueprint_storage"]
-      verification:
-        - "CONFIRM endpoint locks blueprint"
-        - "Creates confirmation_record"
-        - "Triggers semantic translation"
-        - "Returns execution ID"
-      adaptable: false  # Core v8 concept
-    
-    build_semantic_translator:
-      purpose: "Convert YAML to semantic format for AI"
-      prerequisites: ["create_confirm_gateway"]
-      verification:
-        - "YAML parsed and converted to semantic"
-        - "Embeddings generated for semantic fields"
-        - "Semantic_executions record created"
-      adaptable: true
-    
-    implement_terminal_events:
-      purpose: "Emit structured events for ACC monitoring"
+    implement_mcp_gateway:
+      purpose: "Single endpoint for all operations"
       prerequisites: []
       verification:
-        - "Events in format [EPIC-TIDE:TYPE:STATUS:DATA]"
-        - "All state changes emit events"
-        - "Events parseable by ACC"
+        - "POST /api/tool endpoint working"
+        - "Accepts {tool, arguments} format"
+        - "Returns {success, result/error} format"
+        - "NO business logic, just routing"
+      adaptable: false
+    
+    create_storage_tools:
+      purpose: "Tools to store documents"
+      prerequisites: ["deploy_v8_database", "implement_mcp_gateway"]
+      verification:
+        - "blueprint-save: stores YAML blueprint with metadata"
+        - "execution-save: stores execution document"
+        - "evidence-save: stores evidence records"
+        - "pattern-save: stores extracted patterns"
+        - "All saves return ID only, no logic"
+      adaptable: false
+    
+    create_retrieval_tools:
+      purpose: "Tools to retrieve documents"
+      prerequisites: ["create_storage_tools"]
+      verification:
+        - "blueprint-get: returns blueprint by ID/slug"
+        - "execution-get: returns execution by ID"
+        - "evidence-list: returns evidence for execution"
+        - "pattern-list: returns all patterns"
+        - "Simple retrieval, no transformation"
+      adaptable: false
+    
+    create_update_tools:
+      purpose: "Tools to update existing documents"
+      prerequisites: ["create_storage_tools"]
+      verification:
+        - "blueprint-update: updates fields (NOT enforcing lock)"
+        - "execution-update: updates status and fields"
+        - "evidence-append: adds evidence to execution"
+        - "Just updates data, no validation logic"
+      adaptable: false
+    
+    implement_semantic_search:
+      purpose: "Search using embeddings"
+      prerequisites: ["create_storage_tools"]
+      verification:
+        - "search-blueprints: semantic search on blueprints"
+        - "search-executions: semantic search on executions"
+        - "search-patterns: find similar patterns"
+        - "Returns similarity scores and documents"
       adaptable: true
     
-    create_execution_tracker:
-      purpose: "Track TIDE execution with evidence"
-      prerequisites: ["build_semantic_translator", "implement_terminal_events"]
+    connect_embedding_services:
+      purpose: "Generate embeddings for documents"
+      prerequisites: ["implement_semantic_search"]
       verification:
-        - "Execution status updates in real-time"
-        - "Evidence collected and stored"
-        - "Work attempts tracked"
+        - "E5 service generates embeddings for light fields"
+        - "Ada-002 generates embeddings for content"
+        - "Embeddings stored with documents"
+        - "NO decision logic about when to use which"
       adaptable: true
     
-    implement_pattern_extraction:
-      purpose: "Async pattern extraction from success"
-      prerequisites: ["create_execution_tracker"]
+    implement_mcp_response_format:
+      purpose: "Ensure all responses follow MCP contract"
+      prerequisites: ["create_retrieval_tools"]
       verification:
-        - "Patterns extracted after successful TIDE"
-        - "Pattern embeddings generated"
-        - "Patterns searchable for future use"
-      adaptable: true
-    
-    implement_mcp_tools:
-      purpose: "Implement MCP tool operations through gateway"
-      prerequisites: ["implement_mcp_gateway", "deploy_v8_schema"]
-      verification:
-        - "blueprint-create tool working"
-        - "blueprint-confirm tool triggers CONFIRM gateway"
-        - "execution-create tool creates semantic execution"
-        - "pattern-search tool performs semantic search"
-        - "All tools follow MCP contract format"
-      adaptable: false  # Must match MCP tool names exactly
-    
-    build_v8_api:
-      purpose: "Complete v8 API with MCP-compatible endpoints"
-      prerequisites: ["implement_mcp_tools", "create_confirm_gateway"]
-      verification:
-        - "All MCP tools routed through /api/tool"
-        - "CONFIRM gateway accessible via tool"
-        - "Semantic search working"
-        - "Evidence retrieval functional"
-      adaptable: true
+        - "All responses have success field"
+        - "Success responses have result.content array"
+        - "Error responses have error string"
+        - "Content in [{type: 'text', text: '...'}] format"
+      adaptable: false
     
     create_integration_tests:
-      purpose: "Validate complete v8 flow"
-      prerequisites: ["build_v8_api"]
+      purpose: "Test storage and retrieval"
+      prerequisites: ["implement_mcp_response_format"]
       verification:
-        - "Blueprint→CONFIRM→Execution flow tested"
-        - "Semantic search validated"
-        - "Pattern extraction verified"
+        - "Can store blueprint via tool"
+        - "Can retrieve stored blueprint"
+        - "Can search semantically"
+        - "MCP format validated"
       adaptable: true
     
-    deploy_production_stack:
-      purpose: "Deploy complete v8 system"
+    deploy_passive_system:
+      purpose: "Deploy complete passive storage"
       prerequisites: ["create_integration_tests"]
       verification:
-        - "All services running in Docker"
-        - "Health checks passing"
-        - "System accessible and functional"
+        - "Database running"
+        - "API responding"
+        - "Embeddings services connected"
+        - "NO orchestration services"
       adaptable: true
   
   success_criteria:
     functional:
-      - "CONFIRM gateway locks blueprints successfully"
-      - "Semantic translation preserves all information"
-      - "Terminal events enable ACC monitoring"
-      - "Evidence proves work completion"
-      - "Patterns extracted for reuse"
+      - "Documents stored when requested"
+      - "Documents retrieved when queried"
+      - "Semantic search returns relevant results"
+      - "MCP contract followed exactly"
+      - "NO workflow logic implemented"
     
     quality:
-      - "Semantic search <100ms response"
-      - "No data loss in YAML→Semantic conversion"
-      - "100% structured event emission"
+      - "Storage operations < 100ms"
+      - "Search operations < 200ms"
+      - "100% passive - no autonomous actions"
     
     evidence:
-      - "Running v8 system in Docker"
-      - "Successful blueprint→execution flow"
-      - "Pattern library with extracted knowledge"
+      - "Working storage API"
+      - "Successful document CRUD operations"
+      - "Semantic search results"
+      - "NO event handling code"
   
   # === CONFIRMATION REQUIREMENTS ===
   requires_confirmation:
     resources_needed:
       - "PostgreSQL with pgvector"
       - "Docker environment"
-      - "OpenAI API key for ada-002"
+      - "Embedding services"
     
     human_must_provide:
-      - "Approval to proceed with v8 architecture"
-      - "Confirmation that v6 work can be paused"
+      - "Confirmation that passive-only is correct"
+      - "Approval to remove all orchestration"
     
     risks_acknowledged:
-      - "Fresh start means rebuilding from scratch"
-      - "v8 is unproven in production"
-      - "May need iteration to get right"
-  
-  # === AUTONOMY BOUNDARIES ===
-  tide_autonomy:
-    allowed_adaptations:
-      - "Retry failed database operations"
-      - "Adjust API endpoint paths"
-      - "Optimize query performance"
-      - "Add helpful logging"
-    
-    phase_triggers:
-      - "v8 architecture fundamentally flawed"
-      - "CONFIRM gateway concept doesn't work"
-      - "Semantic translation loses critical data"
-      - "Performance requirements impossible"
+      - "KG4EPIC will not handle any workflow"
+      - "All intelligence must be in Claude Code"
+      - "ACC must handle all monitoring"
   
   # === AI EXECUTION INSTRUCTIONS ===
   for_ai: |
-    Priority order:
-    1. MCP gateway first (required for all operations)
-    2. Database schema (foundation)
-    3. CONFIRM gateway (core innovation)
-    4. Semantic layer (AI optimization)
-    5. Terminal events (monitoring)
-    6. Everything else builds on these
+    CRITICAL: KG4EPIC is PASSIVE storage only!
     
-    Critical success factors:
-    - MCP contract MUST be followed exactly (see API_CONTRACT_REQUEST_FOR_MCP.md)
-    - CONFIRM must truly lock blueprints
-    - Semantic must preserve all YAML information
-    - Events must be parseable by ACC
+    What KG4EPIC DOES:
+    - Stores documents when asked
+    - Retrieves documents when queried
+    - Searches documents when requested
+    - Returns results in MCP format
     
-    MCP Integration Notes:
-    - Single endpoint /api/tool for everything
-    - Request: {tool: "name", arguments: {...}}
-    - Response: {success: true/false, result/error: ...}
-    - Content must be in array format
+    What KG4EPIC DOES NOT DO:
+    - NO CONFIRM gateway (Claude Code does this)
+    - NO translation (Claude Code does this)
+    - NO event emission (Claude Code does this)
+    - NO workflow tracking (ACC does this)
+    - NO orchestration (ACC does this)
+    - NO autonomous actions (none at all)
     
-    Known considerations:
-    - Use existing E5 and ada-002 services
-    - Reuse Docker setup from v6
-    - Keep API POST-only for security
+    Think of KG4EPIC as a database with an API.
+    It's a filing cabinet, not a secretary.
+    
+    The flow from earlier shows:
+    - C (Claude) does all the work
+    - M (MCP) is just a bridge
+    - G (KG4EPIC) just stores/retrieves
+    - A (ACC) monitors C's output
+    
+    KG4EPIC never initiates anything.
+    It only responds to requests.
   
-  # === STATUS TRACKING ===
-  status: "draft"  # draft → pending_confirm → confirmed → in_progress → complete
+  # === STATUS ===
+  status: "draft"
   
   # === REFERENCES ===
-  # NOTE: AI references by semantic search or slugs, not IDs
   based_on:
-    pattern_descriptions: ["v6 simplified structure learnings"]
-    previous_execution_slugs: ["kg4epic-phase2-execution-1"]
-    related_blueprint_slugs: ["kg4epic_phase2_enhanced"]
+    pattern_descriptions: ["Passive storage pattern"]
+    previous_execution_slugs: []
+    related_blueprint_slugs: ["epic_tide_v8_phase_1_t1", "epic_tide_v8_phase_1_t2", "epic_tide_v8_phase_1_t3"]
 
 # === USAGE NOTES ===
-# 1. Human reviews this blueprint
-# 2. Human issues CONFIRM command
-# 3. System locks blueprint (immutable)
-# 4. AI begins autonomous TIDE execution
-# 5. No human intervention until TIDE complete
-# 6. Evidence determines success/failure
-# 7. Pattern extraction happens async after success
+# This blueprint correctly positions KG4EPIC as passive storage
+# All orchestration happens in Claude Code and ACC
+# KG4EPIC is just a smart filing cabinet with search

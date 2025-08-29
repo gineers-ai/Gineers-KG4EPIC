@@ -38,10 +38,10 @@ BLUEPRINT:
   # NOTE: AI will expand this section after CONFIRM
   
   scope: |
-    Technical implementation of EPIC-TIDE v8 storage and execution system.
-    Focus on core v8 tables, CONFIRM mechanism, and autonomous execution engine.
-    Leverage existing Docker infrastructure and embedding services.
-    Create clear API boundaries between human-authored blueprints and AI executions.
+    Technical implementation of EPIC-TIDE v8 PASSIVE storage system.
+    Focus on v8 tables for document storage, MCP tool handlers, and search.
+    NO execution logic - KG4EPIC only stores what Claude/humans execute elsewhere.
+    Leverage existing Docker infrastructure and embedding services for search only.
   
   constraints:
     technical:
@@ -106,14 +106,14 @@ BLUEPRINT:
         - "api/v8/ directory for new API"
         - "Separate concerns clearly"
     
-    # CONFIRM Gateway Implementation
-    implement_confirm_gateway:
-      purpose: "Create the core v8 innovation - CONFIRM gateway"
+    # MCP Tool Handlers for Document Storage
+    implement_blueprint_storage:
+      purpose: "Store blueprints when MCP requests"
       verification:
-        - "POST /api/v8/confirm/lock endpoint works"
-        - "Blueprint becomes immutable after CONFIRM"
-        - "Confirmation record created with audit trail"
-        - "Lock hash prevents modifications"
+        - "Tool 'blueprint-create' stores document"
+        - "Tool 'blueprint-get' retrieves document"
+        - "Tool 'blueprint-list' returns all blueprints"
+        - "Blueprints stored with locked flag when MCP indicates"
     
     create_blueprint_api:
       purpose: "Human-facing blueprint management with MCP support"
@@ -125,31 +125,31 @@ BLUEPRINT:
         - "MCP tool 'blueprint-create' works through /api/tool"
         - "MCP tool 'blueprint-list' returns formatted text"
     
-    # AI Execution Engine
-    build_semantic_translator:
-      purpose: "Convert human YAML to AI-optimized format"
+    # Execution Storage (NOT execution engine!)
+    implement_execution_storage:
+      purpose: "Store execution records when Claude reports them"
       verification:
-        - "Extracts semantic summary from vision"
-        - "Generates semantic tags"
-        - "Creates work atoms from works"
-        - "Produces embeddings using existing services"
+        - "Tool 'execution-create' stores new execution record"
+        - "Tool 'execution-update' updates status and evidence"
+        - "Tool 'execution-get' retrieves execution details"
+        - "NO execution logic - just stores what Claude sends"
     
-    implement_execution_engine:
-      purpose: "Autonomous AI execution within TIDEs"
+    implement_evidence_storage:
+      purpose: "Store evidence when Claude collects it"
       verification:
-        - "POST /api/v8/execution/start begins TIDE"
-        - "AI can retry within same TIDE autonomously"
-        - "No human intervention during execution"
-        - "Evidence collected automatically"
+        - "Tool 'evidence-add' stores evidence records"
+        - "Tool 'evidence-list' retrieves evidence for execution"
+        - "Evidence linked to executions"
+        - "NO collection logic - just stores what's sent"
     
-    # Evidence Collection
-    create_evidence_system:
-      purpose: "Dual-format evidence storage"
+    # Pattern Storage
+    implement_pattern_storage:
+      purpose: "Store patterns when identified by external systems"
       verification:
-        - "Evidence stored in database (AI format)"
-        - "GET /api/v8/evidence/report generates human markdown"
-        - "Evidence linked to specific works"
-        - "Verification results tracked"
+        - "Tool 'pattern-create' stores pattern documents"
+        - "Tool 'pattern-search' finds similar patterns"
+        - "Pattern embeddings generated for search"
+        - "NO pattern extraction - just stores what's identified elsewhere"
     
     # Integration
     integrate_embedding_services:
@@ -189,39 +189,43 @@ BLUEPRINT:
   
   # === SUCCESS CRITERIA ===
   success_criteria:
-    - "v8 database schema fully deployed and verified"
-    - "CONFIRM gateway locks blueprints successfully"
-    - "AI executes autonomously within TIDEs"
-    - "Evidence collection works in dual format"
-    - "Existing embedding services integrated"
-    - "Clear human-AI boundary established"
-    - "No remnants of v5.1 structure"
-    - "MCP server can interact through /api/tool endpoint"
-    - "All MCP tools return correct response format"
+    - "v8 database schema deployed for PASSIVE storage"
+    - "MCP tools can CREATE documents (blueprints, executions, patterns)"
+    - "MCP tools can RETRIEVE documents"
+    - "MCP tools can UPDATE document status"
+    - "Semantic search works across all document types"
+    - "NO execution logic present - purely storage"
+    - "Response format matches MCP contract exactly"
+    - "Claude can store/retrieve through MCP successfully"
   
   # === EVIDENCE REQUIRED ===
   evidence_required:
     - "Screenshot of v8 tables in database"
-    - "API test showing CONFIRM lock working"
-    - "Log of autonomous TIDE execution"
-    - "Evidence report in both AI and human formats"
-    - "Semantic search results using dual embeddings"
-    - "Complete v8 flow from blueprint to evidence"
-    - "MCP tool test showing proper request/response format"
-    - "Successful MCP operations through /api/tool"
+    - "MCP tool test: blueprint-create stores document"
+    - "MCP tool test: execution-update changes status"
+    - "MCP tool test: pattern-search returns results"
+    - "Semantic search working with both embeddings"
+    - "Response format matches MCP contract"
+    - "NO execution code present (grep for execution logic returns empty)"
+    - "Pure CRUD operations verified"
   
   # === FOR AI AFTER CONFIRM ===
   for_ai: |
-    After human CONFIRMS this blueprint:
-    1. This becomes immutable - no changes allowed
-    2. You have full autonomy within TIDEs
-    3. You can retry/adapt within same goal
-    4. Collect evidence for all verifications
-    5. Report evidence in dual format
-    6. If goal change needed, request new PHASE
+    CRITICAL UNDERSTANDING: KG4EPIC is PASSIVE storage only.
     
-    Remember: This is a FRESH START. Do not reference or migrate
-    anything from the old v5.1 structure. Build clean v8 from scratch.
+    You will build:
+    1. Database with v8 schema for document storage
+    2. /api/tool endpoint that handles MCP requests
+    3. CRUD operations - nothing more
+    
+    You will NOT build:
+    - Execution engines
+    - Workflow management
+    - CONFIRM gateways
+    - Autonomous systems
+    - Evidence collection logic
+    
+    KG4EPIC just stores what Claude/humans create elsewhere.
     
   # === HUMAN NOTES ===
   human_notes: |
