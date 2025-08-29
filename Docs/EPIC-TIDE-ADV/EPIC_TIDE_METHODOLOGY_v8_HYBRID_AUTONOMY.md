@@ -1,10 +1,14 @@
 # EPIC-TIDE v8: Hybrid Human-AI Autonomy Architecture
 
+**EPIC-TIDE**: Evidence-Powered Iterative Coordination through Transformative Intelligence-Driven Execution
+
 ## Executive Summary
 
-**EPIC-TIDE v8 combines v6's simplicity with AI-optimized execution through a hybrid architecture featuring the CONFIRM gateway and TIDE/PHASE autonomy boundaries.**
+**EPIC-TIDE v8 implements a hybrid architecture where humans and AI collaborate through clear handoff protocols. The system uses just three document types (BLUEPRINT, EXECUTION, PATTERN) with a CONFIRM gateway that establishes AI autonomy boundaries and TIDE/PHASE distinctions for unlimited attempts within approved goals.**
 
 ## Core Philosophy
+
+> "Humans excel at envisioning the future (WHAT/WHY). AI excels at making it real (HOW)."
 
 > "Humans set direction at PHASE boundaries, AI executes autonomously within TIDEs, Evidence drives all progress"
 
