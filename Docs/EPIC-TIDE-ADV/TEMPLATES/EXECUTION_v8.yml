@@ -4,14 +4,13 @@
 
 EXECUTION:
   # === IDENTIFICATION ===
-  id: "[UUID - auto-generated]"
-  version: "8.0"
-  blueprint_id: "[UUID of locked blueprint]"
+  # NOTE: id is added by storage layer, not by AI
+  blueprint_slug: "[slug of locked blueprint]"  # AI references by slug
   
   # === TIDE MANAGEMENT ===
   tide:
     number: [1,2,3...]  # Attempt number within same goal
-    previous_tide_id: "[UUID of previous attempt]"
+    previous_tide_number: [0,1,2...]  # AI tracks by number, not UUID
     can_continue: true  # false triggers PHASE change request
     
   # === SEMANTIC LAYER (AI-Optimized) ===

@@ -3,16 +3,16 @@
 # After CONFIRM, this becomes immutable
 
 BLUEPRINT:
-  # === METADATA (System-Generated) ===
-  id: "[UUID - auto-generated]"
-  version: "8.0"
-  slug: "[human-friendly-url]"  # e.g., 'kg4epic-phase2'
-  name: "[Human-readable name]"  # e.g., 'KG4EPIC Phase 2'
+  # === METADATA ===
+  # NOTE: id and version are added by storage layer (Gineers-KG), not by AI
+  # Claude Code only provides slug and name
+  slug: "[human-friendly-url]"  # e.g., 'kg4epic-phase2' - AI creates this
+  name: "[Human-readable name]"  # e.g., 'KG4EPIC Phase 2' - AI creates this
   
   # === PHASE MANAGEMENT ===
   phase:
     number: [1,2,3...]  # Which PHASE this belongs to
-    previous_phase_id: "[UUID of previous phase, if any]"
+    previous_phase_slug: "[slug of previous phase, if any]"  # AI references by slug
     goal_change: false  # true if this is a PHASE change (needs CONFIRM)
   
   # === HUMAN SECTION (Written by Human) ===
