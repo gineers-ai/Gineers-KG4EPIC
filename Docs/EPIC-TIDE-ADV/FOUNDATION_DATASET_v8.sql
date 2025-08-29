@@ -38,6 +38,7 @@ CREATE TABLE IF NOT EXISTS blueprints (
   -- Phase Management
   phase_number INTEGER NOT NULL DEFAULT 1,
   previous_phase_id UUID REFERENCES blueprints(id),
+  previous_phase_slug VARCHAR(255),  -- AI references by slug
   
   -- Metadata
   based_on JSONB,
@@ -59,6 +60,7 @@ CREATE TABLE IF NOT EXISTS semantic_executions (
   -- Real-world IDs
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   blueprint_id UUID REFERENCES blueprints(id) ON DELETE CASCADE,
+  blueprint_slug VARCHAR(255) NOT NULL,  -- AI references by slug
   tide_number INTEGER NOT NULL DEFAULT 1,
   
   -- Semantic Fields for AI

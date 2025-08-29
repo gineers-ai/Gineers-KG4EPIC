@@ -4,9 +4,9 @@
 
 PATTERN:
   # === IDENTIFICATION ===
-  id: "[UUID - auto-generated]"
-  version: "8.0"
-  pattern_hash: "[SHA-256 of pattern signature]"
+  # NOTE: Patterns are storage-layer only, never created by AI directly
+  # Extracted automatically by Gineers-KG from successful executions
+  # id and pattern_hash are system-generated
   
   # === NO HUMAN FIELDS ===
   # No 'name', 'description', or 'documentation'

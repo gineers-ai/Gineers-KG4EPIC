@@ -123,10 +123,11 @@ BLUEPRINT:
   status: "draft"  # draft → pending_confirm → confirmed → in_progress → complete
   
   # === REFERENCES ===
+  # NOTE: AI references by semantic search or slugs, not IDs
   based_on:
-    patterns: ["[pattern_id]"]  # Patterns to apply
-    executions: ["[execution_id]"]  # Previous attempts
-    blueprints: ["[blueprint_id]"]  # Related blueprints
+    pattern_descriptions: ["[description of relevant pattern]"]  # AI describes patterns semantically
+    previous_execution_slugs: ["[slug-tide-1]", "[slug-tide-2]"]  # Reference by slug
+    related_blueprint_slugs: ["[previous-phase-slug]"]  # Reference by slug
 
 # === USAGE NOTES ===
 # 1. Human fills vision/goals section
